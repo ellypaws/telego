@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"gopkg.in/telebot.v4"
+	"telegram-discord/lib"
 )
 
 const (
@@ -31,33 +32,43 @@ func (b *Bot) Send(content any) error {
 		ThreadID:  b.ThreadID,
 	})
 	if err != nil {
-		b.logger.Error("Failed to send message to Telegram",
+		b.logger.Error(
+			"Failed to send message to Telegram",
 			"error", err,
 			"channel_id", b.Channel,
-			"thread_id", b.ThreadID)
+			"thread_id", b.ThreadID,
+			"content", content,
+		)
 		return fmt.Errorf("error sending to telegram: %w", err)
 	}
 
-	b.logger.Info("Message sent to Telegram",
+	b.logger.Info(
+		"Message sent to Telegram",
 		"channel_id", b.Channel,
-		"thread_id", b.ThreadID)
+		"thread_id", b.ThreadID,
+		"content", content,
+	)
 	return nil
 }
 
 func (b *Bot) handleSendToThisChannel(c telebot.Context) error {
 	b.Channel = c.Chat().ID
 	b.ThreadID = c.Message().ThreadID
-	b.logger.Info("Telegram channel registered",
+	b.logger.Info(
+		"Telegram channel registered",
 		"channel_id", b.Channel,
 		"thread_id", b.ThreadID,
 		"channel_title", c.Chat().Title,
-		"user", c.Sender().Username)
+		"user", c.Sender().Username,
+	)
 
 	if err := c.Delete(); err != nil {
-		b.logger.Error("Failed to delete command message",
+		b.logger.Error(
+			"Failed to delete command message",
 			"error", err,
 			"channel_id", b.Channel,
-			"message_id", c.Message().ID)
+			"message_id", c.Message().ID,
+		)
 	}
 	message, err := c.Bot().Send(
 		c.Recipient(),
@@ -66,19 +77,48 @@ func (b *Bot) handleSendToThisChannel(c telebot.Context) error {
 			ThreadID: b.ThreadID,
 		})
 	if err != nil {
-		b.logger.Error("Failed to send confirmation message",
+		b.logger.Error(
+			"Failed to send confirmation message",
 			"error", err,
 			"channel_id", b.Channel,
-			"thread_id", b.ThreadID)
+			"thread_id", b.ThreadID,
+		)
 		return fmt.Errorf("error sending message: %w", err)
 	}
 
-	time.AfterFunc(5*time.Second, func() {
-		if err := b.Bot.Delete(message); err != nil {
-			b.logger.Error("Failed to delete confirmation message",
+	if err := lib.Set("TELEGRAM_CHANNEL_ID", fmt.Sprintf("%d", b.Channel)); err != nil {
+		b.logger.Error(
+			"Failed to save channel ID to .env",
+			"error", err,
+			"channel_id", b.Channel,
+		)
+	}
+	if b.ThreadID != 0 {
+		if err := lib.Set("TELEGRAM_THREAD_ID", fmt.Sprintf("%d", b.ThreadID)); err != nil {
+			b.logger.Error(
+				"Failed to save thread ID to .env",
 				"error", err,
 				"channel_id", b.Channel,
-				"message_id", message.ID)
+			)
+		}
+	}
+
+	b.logger.Info(
+		"Telegram channel registered",
+		"channel_id", b.Channel,
+		"thread_id", b.ThreadID,
+		"channel_title", c.Chat().Title,
+		"user", c.Sender().Username,
+	)
+
+	time.AfterFunc(5*time.Second, func() {
+		if err := b.Bot.Delete(message); err != nil {
+			b.logger.Error(
+				"Failed to delete confirmation message",
+				"error", err,
+				"channel_id", b.Channel,
+				"message_id", message.ID,
+			)
 		}
 	})
 	return nil

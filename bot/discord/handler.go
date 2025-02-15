@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/bwmarrin/discordgo"
+	"telegram-discord/lib"
 )
 
 func (b *Bot) Commands() error {
@@ -84,6 +85,14 @@ func (b *Bot) handleRegister(s *discordgo.Session, i *discordgo.InteractionCreat
 	}
 
 	b.Channel = &channelID
+
+	if err := lib.Set("DISCORD_CHANNEL_ID", channelID); err != nil {
+		b.logger.Error("Failed to save channel ID to .env",
+			"error", err,
+			"channel_id", channelID,
+		)
+	}
+
 	b.logger.Info("Discord channel registered",
 		"channel_id", channelID,
 		"guild_id", i.GuildID,
