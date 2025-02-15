@@ -55,12 +55,12 @@ func New(config Config) (*Bot, error) {
 
 	tgChannelID, err := strconv.ParseInt(config.TelegramChannelID, 10, 64)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing Telegram channel ID: %w", err)
+		tgChannelID = 0
 	}
 
 	tgThreadID, err := strconv.ParseInt(config.TelegramThreadID, 10, 64)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing Telegram thread ID: %w", err)
+		tgThreadID = 0
 	}
 
 	tgBot, err := telegram.New(config.TelegramToken, tgChannelID, int(tgThreadID))
