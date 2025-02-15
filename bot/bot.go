@@ -93,6 +93,7 @@ func (b *Bot) Start() error {
 		wg.Add(1)
 		go func(bot Bots) {
 			defer wg.Done()
+			bot.Logger().Info("Starting bot", "type", fmt.Sprintf("%T", bot))
 			err := bot.Start()
 			if err != nil {
 				bot.Logger().Error("Failed to start bot",
