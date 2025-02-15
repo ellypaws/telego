@@ -2,33 +2,41 @@ package telegram
 
 import (
 	"fmt"
+	"time"
 
-	"github.com/go-telegram-bot-api/telegram-bot-api"
+	"gopkg.in/telebot.v4"
 )
 
 type Bot struct {
-	Bot     *tgbotapi.BotAPI
-	Channel int64
+	Bot      *telebot.Bot
+	Channel  int64
+	ThreadID int
 }
 
-func New(token string, channel int64) (*Bot, error) {
-	bot, err := tgbotapi.NewBotAPI(token)
+func New(token string, channel int64, threadID int) (*Bot, error) {
+	settings := telebot.Settings{
+		Token:  token,
+		Poller: &telebot.LongPoller{Timeout: 10 * time.Second},
+	}
+
+	bot, err := telebot.NewBot(settings)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating telegram bot: %w", err)
 	}
 
 	return &Bot{
-		Bot:     bot,
-		Channel: channel,
+		Bot:      bot,
+		Channel:  channel,
+		ThreadID: threadID,
 	}, nil
 }
 
-func (b *Bot) Send(text string) error {
-	msg := tgbotapi.NewMessage(b.Channel, text)
-	_, err := b.Bot.Send(msg)
-	if err != nil {
-		return fmt.Errorf("error sending to telegram: %w", err)
-	}
+func (b *Bot) Start() error {
+	go b.Bot.Start()
+	return nil
+}
 
+func (b *Bot) Stop() error {
+	b.Bot.Stop()
 	return nil
 }

@@ -21,6 +21,7 @@ func main() {
 		DiscordChannelID:  os.Getenv("DISCORD_CHANNEL_ID"),
 		TelegramToken:     os.Getenv("TELEGRAM_TOKEN"),
 		TelegramChannelID: os.Getenv("TELEGRAM_CHANNEL_ID"),
+		TelegramThreadID:  os.Getenv("TELEGRAM_THREAD_ID"),
 	})
 	if err != nil {
 		log.Fatalf("error creating bot: %v", err)
