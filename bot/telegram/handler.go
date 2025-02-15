@@ -28,6 +28,7 @@ func (b *Bot) Send(text string) error {
 	chat := &telebot.Chat{ID: b.Channel}
 	_, err := b.Bot.Send(chat, text, &telebot.SendOptions{
 		ParseMode: telebot.ModeMarkdownV2,
+		ThreadID:  b.ThreadID,
 	})
 	if err != nil {
 		return fmt.Errorf("error sending to telegram: %w", err)
