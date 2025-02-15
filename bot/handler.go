@@ -2,6 +2,7 @@ package bot
 
 import (
 	"log"
+	"telegram-discord/bot/parser"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -26,7 +27,7 @@ func (b *Bot) registerMainHandler() {
 			message = retrieve
 		}
 
-		toSend := sendable(message)
+		toSend := parser.Sendable(s, message)
 		if toSend == nil {
 			log.Printf("No content to send")
 			return
