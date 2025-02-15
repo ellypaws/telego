@@ -8,26 +8,25 @@ import (
 )
 
 type Stack struct {
-	loggers map[string]*Logger
+	loggers []*Logger
 	width   int
 	height  int
 	padding int
 }
 
-func NewStack(loggers ...string) *Stack {
-	if len(loggers) == 0 {
-		loggers = []string{"log"}
+func NewStack(names ...string) *Stack {
+	if len(names) == 0 {
+		names = []string{"log"}
 	}
 
-	stack := &Stack{
-		loggers: make(map[string]*Logger),
+	loggers := make([]*Logger, len(names))
+	for i, logger := range names {
+		loggers[i] = NewLogger(logger)
 	}
 
-	for _, logger := range loggers {
-		stack.loggers[logger] = NewLogger()
+	return &Stack{
+		loggers: loggers,
 	}
-
-	return stack
 }
 
 func (s *Stack) Len() int {
@@ -35,7 +34,12 @@ func (s *Stack) Len() int {
 }
 
 func (s *Stack) Get(name string) *Logger {
-	return s.loggers[name]
+	for _, l := range s.loggers {
+		if l.Title == name {
+			return l
+		}
+	}
+	return nil
 }
 
 func (s *Stack) Init() tea.Cmd {

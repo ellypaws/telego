@@ -22,7 +22,7 @@ func init() {
 }
 
 func main() {
-	loggers := logger.NewStack(telegramLogger, discordLogger)
+	loggers := logger.NewStack(discordLogger, telegramLogger)
 
 	b, err := bot.New(bot.Config{
 		DiscordToken:     os.Getenv("DISCORD_TOKEN"),

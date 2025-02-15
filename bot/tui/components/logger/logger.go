@@ -31,6 +31,7 @@ func (m *Logger) Write(p []byte) (n int, err error) {
 }
 
 type Logger struct {
+	Title    string
 	spinner  spinner.Model
 	messages []Message
 	offset   int
@@ -42,11 +43,12 @@ type Logger struct {
 	last      int
 }
 
-func NewLogger() *Logger {
+func NewLogger(title string) *Logger {
 	const numLastResults = 256
 	s := spinner.New()
 	s.Style = spinnerStyle
 	return &Logger{
+		Title:    title,
 		spinner:  s,
 		messages: make([]Message, numLastResults),
 		last:     -1,
