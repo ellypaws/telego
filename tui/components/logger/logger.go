@@ -13,11 +13,23 @@ import (
 )
 
 var (
+	highlight  = lipgloss.AdaptiveColor{Light: "#874BFD", Dark: "#7D56F4"}
+	fullBorder = lipgloss.Border{
+		Top:         "─",
+		Bottom:      "─",
+		Left:        "│",
+		Right:       "│",
+		TopLeft:     "╭",
+		TopRight:    "╮",
+		BottomLeft:  "╰",
+		BottomRight: "╯",
+	}
+
 	spinnerStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("63"))
 	helpStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Margin(1, 0)
 	dotStyle      = helpStyle.UnsetMargins()
 	durationStyle = dotStyle
-	appStyle      = lipgloss.NewStyle().Margin(1, 2, 0, 2)
+	appStyle      = lipgloss.NewStyle().Border(fullBorder, true).BorderForeground(highlight).Margin(1, 2, 0, 2)
 	scrollStyle   = helpStyle.Margin(0, 0, 1)
 )
 

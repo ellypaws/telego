@@ -1,8 +1,6 @@
 package logger
 
 import (
-	"strings"
-
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -93,10 +91,9 @@ func (s *Stack) View() string {
 	views := make([]string, len(s.loggers))
 	for _, l := range s.loggers {
 		views = append(views, l.View())
-		views = append(views, strings.Repeat(" ", s.padding))
 	}
 
-	return lipgloss.JoinHorizontal(lipgloss.Center, views[:len(views)-1]...)
+	return lipgloss.JoinHorizontal(lipgloss.Center, views...)
 }
 
 func calculateRatio(numLoggers int) float64 {
