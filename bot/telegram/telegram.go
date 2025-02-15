@@ -43,10 +43,12 @@ func (b *Bot) Logger() *log.Logger {
 
 func (b *Bot) Start() error {
 	go b.Bot.Start()
+	b.logger.Info("Telegram bot started")
 	return nil
 }
 
 func (b *Bot) Stop() error {
+	b.logger.Info("Stopping Telegram bot")
 	b.Bot.Stop()
 	return nil
 }

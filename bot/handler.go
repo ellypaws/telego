@@ -9,12 +9,14 @@ import (
 func (b *Bot) registerMainHandler() {
 	b.Discord.Session.AddHandler(func(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if b.Discord.Channel == nil {
-			b.Discord.Logger().Printf("No channel registered, ignoring message")
+			b.Discord.Logger().Info("Message ignored - no channel registered")
 			return
 		}
 
 		if m.ChannelID != *b.Discord.Channel {
-			b.Discord.Logger().Printf("Ignoring message from channel %s, want %s", m.ChannelID, *b.Discord.Channel)
+			b.Discord.Logger().Debug("Message ignored - wrong channel",
+				"received_channel", m.ChannelID,
+				"target_channel", *b.Discord.Channel)
 			return
 		}
 
@@ -25,7 +27,10 @@ func (b *Bot) registerMainHandler() {
 		if m.MessageReference != nil {
 			retrieve, err := b.Discord.Session.ChannelMessage(m.MessageReference.ChannelID, m.MessageReference.MessageID)
 			if err != nil {
-				b.Discord.Logger().Printf("Error retrieving message reference: %v", err)
+				b.Discord.Logger().Error("Failed to retrieve message reference",
+					"error", err,
+					"channel_id", m.MessageReference.ChannelID,
+					"message_id", m.MessageReference.MessageID)
 				return
 			}
 			message = retrieve
@@ -33,14 +38,23 @@ func (b *Bot) registerMainHandler() {
 
 		toSend := parser.Sendable(s, message)
 		if toSend == nil {
-			b.Telegram.Logger().Printf("No content to send")
+			b.Telegram.Logger().Info("Message ignored - no content to send",
+				"message_id", message.ID,
+				"channel_id", message.ChannelID)
 			return
 		}
 
 		err := b.Telegram.Send(toSend)
 		if err != nil {
-			b.Telegram.Logger().Printf("Error forwarding message to Telegram: %v", err)
+			b.Telegram.Logger().Error("Failed to forward message to Telegram",
+				"error", err,
+				"message_id", message.ID,
+				"channel_id", message.ChannelID)
+		} else {
+			b.Telegram.Logger().Info("Message forwarded to Telegram",
+				"message_id", message.ID,
+				"channel_id", message.ChannelID,
+				"author", message.Author.Username)
 		}
-		b.Telegram.Logger().Printf("Message forwarded to Telegram")
 	})
 }

@@ -46,13 +46,14 @@ func (b *Bot) Commands() error {
 
 	for _, cmd := range commands {
 		if _, ok := isRegistered[cmd.Name]; ok {
-			b.logger.Info("Command %s is already registered, skipping...", "command", cmd.Name)
+			b.logger.Info("Command already registered", "command", cmd.Name)
 			continue
 		}
 		_, err := b.Session.ApplicationCommandCreate(b.Session.State.User.ID, "", cmd)
 		if err != nil {
 			return fmt.Errorf("error creating command %s: %w", cmd.Name, err)
 		}
+		b.logger.Info("Command registered successfully", "command", cmd.Name)
 	}
 
 	return nil
@@ -83,7 +84,10 @@ func (b *Bot) handleRegister(s *discordgo.Session, i *discordgo.InteractionCreat
 	}
 
 	b.Channel = &channelID
-	b.logger.Info("Registered new Discord channel", "channel", channelID)
+	b.logger.Info("Discord channel registered",
+		"channel_id", channelID,
+		"guild_id", i.GuildID,
+		"user", i.Member.User.Username)
 
 	b.respond(s, i, fmt.Sprintf("Successfully registered channel <#%s> for message forwarding", channelID))
 }
@@ -94,8 +98,12 @@ func (b *Bot) handleUnregister(s *discordgo.Session, i *discordgo.InteractionCre
 		return
 	}
 
+	oldChannel := *b.Channel
 	b.Channel = nil
-	b.logger.Info("Unregistered Discord channel", "id", i.ChannelID)
+	b.logger.Info("Discord channel unregistered",
+		"channel_id", oldChannel,
+		"guild_id", i.GuildID,
+		"user", i.Member.User.Username)
 
 	b.respond(s, i, "Successfully unregistered this channel from message forwarding")
 }
@@ -109,7 +117,10 @@ func (b *Bot) respond(s *discordgo.Session, i *discordgo.InteractionCreate, cont
 		},
 	})
 	if err != nil {
-		b.logger.Errorf("error responding to interaction: %v", err)
+		b.logger.Error("Failed to respond to interaction",
+			"error", err,
+			"interaction_id", i.ID,
+			"channel_id", i.ChannelID)
 	}
 }
 
@@ -122,6 +133,10 @@ func (b *Bot) respondWithError(s *discordgo.Session, i *discordgo.InteractionCre
 		},
 	})
 	if err != nil {
-		b.logger.Errorf("error responding to interaction: %v", err)
+		b.logger.Error("Failed to respond to interaction with error",
+			"error", err,
+			"interaction_id", i.ID,
+			"channel_id", i.ChannelID,
+			"content", content)
 	}
 }

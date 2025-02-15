@@ -44,7 +44,7 @@ func (b *Bot) Logger() *log.Logger {
 
 func (b *Bot) Start() error {
 	b.Session.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
-		b.logger.Info("Logged in as", "user", fmt.Sprintf("%s#%s", s.State.User.Username, s.State.User.Discriminator))
+		b.logger.Info("Discord bot logged in", "user", fmt.Sprintf("%s#%s", s.State.User.Username, s.State.User.Discriminator))
 	})
 
 	err := b.Session.Open()
@@ -52,9 +52,11 @@ func (b *Bot) Start() error {
 		return fmt.Errorf("error opening connection to Discord: %w", err)
 	}
 
+	b.logger.Info("Discord connection established")
 	return nil
 }
 
 func (b *Bot) Stop() error {
+	b.logger.Info("Closing Discord connection")
 	return b.Session.Close()
 }

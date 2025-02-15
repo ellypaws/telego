@@ -31,19 +31,33 @@ func (b *Bot) Send(content any) error {
 		ThreadID:  b.ThreadID,
 	})
 	if err != nil {
+		b.logger.Error("Failed to send message to Telegram",
+			"error", err,
+			"channel_id", b.Channel,
+			"thread_id", b.ThreadID)
 		return fmt.Errorf("error sending to telegram: %w", err)
 	}
 
+	b.logger.Info("Message sent to Telegram",
+		"channel_id", b.Channel,
+		"thread_id", b.ThreadID)
 	return nil
 }
 
 func (b *Bot) handleSendToThisChannel(c telebot.Context) error {
 	b.Channel = c.Chat().ID
 	b.ThreadID = c.Message().ThreadID
-	b.logger.Printf("Registered new Telegram channel: %s (%d : %d)", c.Chat().Title, b.Channel, b.ThreadID)
+	b.logger.Info("Telegram channel registered",
+		"channel_id", b.Channel,
+		"thread_id", b.ThreadID,
+		"channel_title", c.Chat().Title,
+		"user", c.Sender().Username)
 
 	if err := c.Delete(); err != nil {
-		b.logger.Printf("error deleting message: %s, does the bot have the correct permissions?", err)
+		b.logger.Error("Failed to delete command message",
+			"error", err,
+			"channel_id", b.Channel,
+			"message_id", c.Message().ID)
 	}
 	message, err := c.Bot().Send(
 		c.Recipient(),
@@ -52,12 +66,19 @@ func (b *Bot) handleSendToThisChannel(c telebot.Context) error {
 			ThreadID: b.ThreadID,
 		})
 	if err != nil {
+		b.logger.Error("Failed to send confirmation message",
+			"error", err,
+			"channel_id", b.Channel,
+			"thread_id", b.ThreadID)
 		return fmt.Errorf("error sending message: %w", err)
 	}
 
 	time.AfterFunc(5*time.Second, func() {
 		if err := b.Bot.Delete(message); err != nil {
-			b.logger.Printf("error deleting message: %v", err)
+			b.logger.Error("Failed to delete confirmation message",
+				"error", err,
+				"channel_id", b.Channel,
+				"message_id", message.ID)
 		}
 	})
 	return nil
@@ -68,8 +89,12 @@ func (b *Bot) handleUnsubscribe(c telebot.Context) error {
 		return c.Send("This channel is not currently registered for message forwarding")
 	}
 
+	oldChannel := b.Channel
 	b.Channel = 0 // Reset channel ID
-	b.logger.Printf("Unregistered Telegram channel: %d", c.Chat().ID)
+	b.logger.Info("Telegram channel unregistered",
+		"channel_id", oldChannel,
+		"channel_title", c.Chat().Title,
+		"user", c.Sender().Username)
 
 	return c.Send("✅ Successfully unregistered this channel from message forwarding")
 }
