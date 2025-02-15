@@ -6,8 +6,8 @@ import (
 	"log"
 	"os"
 	"telegram-discord/bot"
-	"telegram-discord/bot/tui"
-	"telegram-discord/bot/tui/components/logger"
+	"telegram-discord/tui"
+	"telegram-discord/tui/components/logger"
 )
 
 const (

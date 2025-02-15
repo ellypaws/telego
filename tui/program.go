@@ -1,9 +1,10 @@
 package tui
 
 import (
+	"telegram-discord/tui/components/logger"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"telegram-discord/bot/tui/components/logger"
 )
 
 type Model struct {
