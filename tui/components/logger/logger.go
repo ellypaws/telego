@@ -38,12 +38,13 @@ type Logger struct {
 	quitting bool
 
 	maxHeight int
+	padding   int
 	width     int
 	height    int
 	last      int
 }
 
-func NewLogger(title string) *Logger {
+func NewLogger(title string, padding int) *Logger {
 	const numLastResults = 256
 	s := spinner.New()
 	s.Style = spinnerStyle
@@ -51,6 +52,7 @@ func NewLogger(title string) *Logger {
 		Title:    title,
 		spinner:  s,
 		messages: make([]Message, numLastResults),
+		padding:  padding,
 		last:     -1,
 	}
 }
@@ -62,7 +64,7 @@ func (m *Logger) Init() tea.Cmd {
 func (m *Logger) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		m.maxHeight = max(0, msg.Height-14)
+		m.maxHeight = max(0, msg.Height-m.padding-4)
 		m.width = msg.Width
 		m.height = msg.Height
 		return m, nil
@@ -170,7 +172,7 @@ func (m *Logger) getVisibleLogs() []string {
 		if i < m.offset {
 			continue
 		}
-		out, h := res.String(m.width - 24)
+		out, h := res.String(m.width - m.padding)
 		height += h
 		if m.offset > 0 && height+2 > m.maxHeight {
 			break

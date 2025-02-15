@@ -19,13 +19,15 @@ func NewStack(names ...string) *Stack {
 		names = []string{"log"}
 	}
 
+	const padding = 3
 	loggers := make([]*Logger, len(names))
 	for i, logger := range names {
-		loggers[i] = NewLogger(logger)
+		loggers[i] = NewLogger(logger, padding)
 	}
 
 	return &Stack{
 		loggers: loggers,
+		padding: padding,
 	}
 }
 
