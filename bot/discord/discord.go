@@ -2,21 +2,26 @@ package discord
 
 import (
 	"fmt"
-	"log"
+	"io"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/charmbracelet/log"
 )
 
 type Bot struct {
 	Session *discordgo.Session
 	Channel *string
+
+	logger *log.Logger
 }
 
-func New(token string, discordChannelID string) (*Bot, error) {
+func New(token string, discordChannelID string, output io.Writer) (*Bot, error) {
 	dg, err := discordgo.New("Bot " + token)
 	if err != nil {
 		return nil, err
 	}
+
+	logger := log.New(output)
 
 	var channel *string
 	if discordChannelID == "" {
@@ -28,12 +33,18 @@ func New(token string, discordChannelID string) (*Bot, error) {
 	return &Bot{
 		Session: dg,
 		Channel: channel,
+
+		logger: logger,
 	}, nil
+}
+
+func (b *Bot) Logger() *log.Logger {
+	return b.logger
 }
 
 func (b *Bot) Start() error {
 	b.Session.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
-		log.Printf("Logged in as: %s#%s", s.State.User.Username, s.State.User.Discriminator)
+		b.logger.Info("Logged in as", "user", fmt.Sprintf("%s#%s", s.State.User.Username, s.State.User.Discriminator))
 	})
 
 	err := b.Session.Open()

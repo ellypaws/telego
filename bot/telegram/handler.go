@@ -2,9 +2,9 @@ package telegram
 
 import (
 	"fmt"
-	"gopkg.in/telebot.v4"
-	"log"
 	"time"
+
+	"gopkg.in/telebot.v4"
 )
 
 const (
@@ -40,10 +40,10 @@ func (b *Bot) Send(content any) error {
 func (b *Bot) handleSendToThisChannel(c telebot.Context) error {
 	b.Channel = c.Chat().ID
 	b.ThreadID = c.Message().ThreadID
-	log.Printf("Registered new Telegram channel: %s (%d : %d)", c.Chat().Title, b.Channel, b.ThreadID)
+	b.logger.Printf("Registered new Telegram channel: %s (%d : %d)", c.Chat().Title, b.Channel, b.ThreadID)
 
 	if err := c.Delete(); err != nil {
-		log.Printf("error deleting message: %s, does the bot have the correct permissions?", err)
+		b.logger.Printf("error deleting message: %s, does the bot have the correct permissions?", err)
 	}
 	message, err := c.Bot().Send(
 		c.Recipient(),
@@ -57,7 +57,7 @@ func (b *Bot) handleSendToThisChannel(c telebot.Context) error {
 
 	time.AfterFunc(5*time.Second, func() {
 		if err := b.Bot.Delete(message); err != nil {
-			log.Printf("error deleting message: %v", err)
+			b.logger.Printf("error deleting message: %v", err)
 		}
 	})
 	return nil
@@ -69,7 +69,7 @@ func (b *Bot) handleUnsubscribe(c telebot.Context) error {
 	}
 
 	b.Channel = 0 // Reset channel ID
-	log.Printf("Unregistered Telegram channel: %d", c.Chat().ID)
+	b.logger.Printf("Unregistered Telegram channel: %d", c.Chat().ID)
 
 	return c.Send("✅ Successfully unregistered this channel from message forwarding")
 }

@@ -6,19 +6,12 @@ import (
 	"os"
 )
 
-func LogOutput(writers ...io.Writer) func() {
+func LogOutput(writer io.Writer) func() {
 	logfile := `log.txt`
-	f, err := os.OpenFile(logfile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
-	if err != nil {
-		panic(err)
-	}
+	f, _ := os.OpenFile(logfile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
 
-	writers = append(writers, f)
-	mw := io.MultiWriter(writers...)
-	r, w, err := os.Pipe()
-	if err != nil {
-		panic(err)
-	}
+	mw := io.MultiWriter(writer, f)
+	r, w, _ := os.Pipe()
 
 	os.Stdout = w
 	os.Stderr = w

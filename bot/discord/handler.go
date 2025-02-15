@@ -2,7 +2,6 @@ package discord
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -47,7 +46,7 @@ func (b *Bot) Commands() error {
 
 	for _, cmd := range commands {
 		if _, ok := isRegistered[cmd.Name]; ok {
-			log.Printf("Command %s is already registered, skipping...", cmd.Name)
+			b.logger.Info("Command %s is already registered, skipping...", "command", cmd.Name)
 			continue
 		}
 		_, err := b.Session.ApplicationCommandCreate(b.Session.State.User.ID, "", cmd)
@@ -83,16 +82,10 @@ func (b *Bot) handleRegister(s *discordgo.Session, i *discordgo.InteractionCreat
 		channelID = i.ChannelID
 	}
 
-	channel, err := s.Channel(channelID)
-	if err != nil {
-		respondWithError(s, i, "Failed to get channel information")
-		return
-	}
+	b.Channel = &channelID
+	b.logger.Info("Registered new Discord channel", "channel", channelID)
 
-	b.Channel = channel
-	log.Printf("Registered new Discord channel: %s (%s)", channel.Name, channel.ID)
-
-	respond(s, i, fmt.Sprintf("Successfully registered channel <#%s> for message forwarding", channelID))
+	b.respond(s, i, fmt.Sprintf("Successfully registered channel <#%s> for message forwarding", channelID))
 }
 
 func (b *Bot) handleUnregister(s *discordgo.Session, i *discordgo.InteractionCreate) {
@@ -102,12 +95,12 @@ func (b *Bot) handleUnregister(s *discordgo.Session, i *discordgo.InteractionCre
 	}
 
 	b.Channel = nil
-	log.Printf("Unregistered Discord channel: %s", i.ChannelID)
+	b.logger.Info("Unregistered Discord channel", "id", i.ChannelID)
 
-	respond(s, i, "Successfully unregistered this channel from message forwarding")
+	b.respond(s, i, "Successfully unregistered this channel from message forwarding")
 }
 
-func respond(s *discordgo.Session, i *discordgo.InteractionCreate, content string) {
+func (b *Bot) respond(s *discordgo.Session, i *discordgo.InteractionCreate, content string) {
 	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
@@ -116,11 +109,11 @@ func respond(s *discordgo.Session, i *discordgo.InteractionCreate, content strin
 		},
 	})
 	if err != nil {
-		log.Printf("Error responding to interaction: %v", err)
+		b.logger.Errorf("error responding to interaction: %v", err)
 	}
 }
 
-func respondWithError(s *discordgo.Session, i *discordgo.InteractionCreate, content string) {
+func (b *Bot) respondWithError(s *discordgo.Session, i *discordgo.InteractionCreate, content string) {
 	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
@@ -129,6 +122,6 @@ func respondWithError(s *discordgo.Session, i *discordgo.InteractionCreate, cont
 		},
 	})
 	if err != nil {
-		log.Printf("Error responding to interaction: %v", err)
+		b.logger.Errorf("error responding to interaction: %v", err)
 	}
 }

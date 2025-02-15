@@ -2,7 +2,7 @@ package bot
 
 import (
 	"fmt"
-	"log"
+	"io"
 	"os"
 	"os/signal"
 	"strconv"
@@ -11,6 +11,8 @@ import (
 
 	"telegram-discord/bot/discord"
 	"telegram-discord/bot/telegram"
+
+	"github.com/charmbracelet/log"
 )
 
 type Bot struct {
@@ -23,6 +25,7 @@ type Bots interface {
 	Registrar
 	Starter
 	Stopper
+	Logger
 }
 
 type Registrar interface {
@@ -38,17 +41,23 @@ type Stopper interface {
 	Stop() error
 }
 
+type Logger interface {
+	Logger() *log.Logger
+}
+
 type Config struct {
 	DiscordToken     string
 	DiscordChannelID string
+	DiscordLogger    io.Writer
 
 	TelegramToken     string
 	TelegramChannelID string
 	TelegramThreadID  string
+	TelegramLogger    io.Writer
 }
 
 func New(config Config) (*Bot, error) {
-	discordBot, err := discord.New(config.DiscordToken, config.DiscordChannelID)
+	discordBot, err := discord.New(config.DiscordToken, config.DiscordChannelID, config.DiscordLogger)
 	if err != nil {
 		return nil, fmt.Errorf("error creating Discord bot: %w", err)
 	}
@@ -63,7 +72,7 @@ func New(config Config) (*Bot, error) {
 		tgThreadID = 0
 	}
 
-	tgBot, err := telegram.New(config.TelegramToken, tgChannelID, int(tgThreadID))
+	tgBot, err := telegram.New(config.TelegramToken, tgChannelID, int(tgThreadID), config.TelegramLogger)
 	if err != nil {
 		return nil, fmt.Errorf("error creating Telegram bot: %w", err)
 	}
@@ -86,18 +95,18 @@ func (b *Bot) Start() error {
 			defer wg.Done()
 			err := bot.Start()
 			if err != nil {
-				log.Printf("error starting %T: %v", bot, err)
+				bot.Logger().Printf("error starting %T: %v", bot, err)
 				return
 			}
-			log.Printf("%T is running", bot)
+			bot.Logger().Printf("%T is running", bot)
 
-			log.Printf("Registering commands for %T...", bot)
+			bot.Logger().Printf("Registering commands for %T...", bot)
 			err = bot.Commands()
 			if err != nil {
-				log.Printf("error registering %T commands: %v", bot, err)
+				bot.Logger().Printf("error registering %T commands: %v", bot, err)
 				return
 			}
-			log.Printf("Commands registered for %T", bot)
+			bot.Logger().Printf("Commands registered for %T", bot)
 
 			go bot.Handlers()
 		}(bot)
@@ -105,7 +114,7 @@ func (b *Bot) Start() error {
 	wg.Wait()
 
 	b.registerMainHandler()
-	log.Println("Discord to Telegram mirroring bot is running. Press CTRL+C to exit.")
+	b.Discord.Logger().Print("Discord to Telegram mirroring bot is running. Press CTRL+C to exit.")
 	return nil
 }
 
@@ -116,7 +125,7 @@ func (b *Bot) Wait() {
 }
 
 func (b *Bot) Shutdown() error {
-	log.Println("Shutting down...")
+	b.Discord.Logger().Print("Shutting down...")
 	var wg sync.WaitGroup
 	for _, registrar := range b.Bots {
 		wg.Add(1)
@@ -124,7 +133,7 @@ func (b *Bot) Shutdown() error {
 			defer wg.Done()
 			err := registrar.Stop()
 			if err != nil {
-				log.Printf("error stopping %T: %v", registrar, err)
+				registrar.Logger().Printf("error stopping %T: %v", registrar, err)
 			}
 		}(registrar)
 	}

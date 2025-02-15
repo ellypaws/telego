@@ -30,11 +30,11 @@ func NewStack(loggers ...string) *Stack {
 	return stack
 }
 
-func (s *Stack) GetLoggers() map[string]*Logger {
-	return s.loggers
+func (s *Stack) Len() int {
+	return len(s.loggers)
 }
 
-func (s *Stack) GetLogger(name string) *Logger {
+func (s *Stack) Get(name string) *Logger {
 	return s.loggers[name]
 }
 
@@ -51,23 +51,22 @@ func (s *Stack) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		// Only propagate if dimensions changed
-		if s.width != msg.Width || s.height != msg.Height {
-			s.width = msg.Width
-			s.height = msg.Height
+		if s.width == msg.Width && s.height == msg.Height {
+			return s, nil
+		}
+		s.width = msg.Width
+		s.height = msg.Height
 
-			width := s.calculateWidth()
-			for i, l := range s.loggers {
-				if model, cmd := l.Update(tea.WindowSizeMsg{
-					Width:  width,
-					Height: msg.Height - s.padding,
-				}); cmd != nil {
-					s.loggers[i] = model.(*Logger)
-					cmds = append(cmds, cmd)
-				}
+		width := s.calculateWidth()
+		for i, l := range s.loggers {
+			if model, cmd := l.Update(tea.WindowSizeMsg{
+				Width:  width - s.padding,
+				Height: msg.Height,
+			}); cmd != nil {
+				s.loggers[i] = model.(*Logger)
+				cmds = append(cmds, cmd)
 			}
 		}
-
 	default:
 		for i, l := range s.loggers {
 			if model, cmd := l.Update(msg); cmd != nil {
@@ -104,19 +103,4 @@ func (s *Stack) calculateWidth() int {
 	ratio := calculateRatio(numLoggers)
 
 	return int(float64(s.width) * ratio)
-}
-
-func (s *Stack) SetSize(width, height int) {
-	s.width = width
-	s.height = height
-
-	// Calculate height for each logger
-	loggerHeight := (height - (s.padding * (len(s.loggers) - 1))) / len(s.loggers)
-
-	// Set size for each logger
-	currentY := 0
-	for _, l := range s.loggers {
-		l.SetSize(width, loggerHeight)
-		currentY += loggerHeight + s.padding
-	}
 }

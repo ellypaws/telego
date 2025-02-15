@@ -1,25 +1,20 @@
 package tui
 
 import (
-	"telegram-discord/bot/tui/components/logger"
-
 	tea "github.com/charmbracelet/bubbletea"
-)
-
-const (
-	telegramLogger = "telegram"
-	discordLogger  = "discord"
+	"github.com/charmbracelet/lipgloss"
+	"telegram-discord/bot/tui/components/logger"
 )
 
 type Model struct {
-	loggers *logger.Stack
+	loggers tea.Model
 	width   int
 	height  int
 }
 
-func NewModel() Model {
+func NewModel(loggers *logger.Stack) Model {
 	return Model{
-		loggers: logger.NewStack(telegramLogger, discordLogger),
+		loggers: loggers,
 	}
 }
 
@@ -31,9 +26,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
+		if m.width == msg.Width && m.height == msg.Height {
+			return m, nil
+		}
 		m.width = msg.Width
 		m.height = msg.Height
-		m.loggers.SetSize(msg.Width, msg.Height)
+
+		return m.propagate(msg, cmd)
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c":
@@ -41,27 +40,23 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
-	// Update loggers
-	loggerModel, loggerCmd := m.loggers.Update(msg)
-	if loggerStack, ok := loggerModel.(*logger.Stack); ok {
-		m.loggers = loggerStack
-	}
-	cmd = loggerCmd
+	return m.propagate(msg, cmd)
+}
 
-	return m, cmd
+func (m Model) propagate(msg tea.Msg, cmd tea.Cmd) (tea.Model, tea.Cmd) {
+	cmds := make([]tea.Cmd, 0, m.loggers.(*logger.Stack).Len())
+	if cmd != nil {
+		cmds = append(cmds, cmd)
+	}
+
+	m.loggers, cmd = m.loggers.Update(msg)
+	if cmd != nil {
+		cmds = append(cmds, cmd)
+	}
+
+	return m, tea.Batch(cmds...)
 }
 
 func (m Model) View() string {
-	return m.loggers.View()
-}
-
-func Start() error {
-	p := tea.NewProgram(
-		NewModel(),
-		tea.WithAltScreen(),
-		tea.WithMouseCellMotion(),
-	)
-
-	_, err := p.Run()
-	return err
+	return lipgloss.PlaceHorizontal(m.width, lipgloss.Center, m.loggers.View())
 }
