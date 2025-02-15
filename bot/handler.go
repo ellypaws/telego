@@ -7,7 +7,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func (b *Bot) registerDiscordHandlers() {
+func (b *Bot) registerMainHandler() {
 	b.Discord.Session.AddHandler(func(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if m.Author.Bot {
 			return

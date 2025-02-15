@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"sync"
 	"syscall"
 
 	"telegram-discord/bot/discord"
@@ -78,24 +79,32 @@ func New(config Config) (*Bot, error) {
 }
 
 func (b *Bot) Start() error {
-	b.registerDiscordHandlers()
+	var wg sync.WaitGroup
 	for _, bot := range b.Bots {
-		err := bot.Start()
-		if err != nil {
-			return fmt.Errorf("error starting %T: %w", bot, err)
-		}
-		log.Printf("%T is running", bot)
+		wg.Add(1)
+		go func(bot Bots) {
+			defer wg.Done()
+			err := bot.Start()
+			if err != nil {
+				log.Printf("error starting %T: %v", bot, err)
+				return
+			}
+			log.Printf("%T is running", bot)
 
-		log.Printf("Registering commands for %T...", bot)
-		err = bot.Commands()
-		if err != nil {
-			return fmt.Errorf("error registering %T commands: %w", bot, err)
-		}
-		log.Printf("Commands registered for %T", bot)
+			log.Printf("Registering commands for %T...", bot)
+			err = bot.Commands()
+			if err != nil {
+				log.Printf("error registering %T commands: %v", bot, err)
+				return
+			}
+			log.Printf("Commands registered for %T", bot)
 
-		go bot.Handlers()
+			go bot.Handlers()
+		}(bot)
 	}
+	wg.Wait()
 
+	b.registerMainHandler()
 	log.Println("Discord to Telegram mirroring bot is running. Press CTRL+C to exit.")
 	return nil
 }
@@ -108,11 +117,17 @@ func (b *Bot) Wait() {
 
 func (b *Bot) Shutdown() error {
 	log.Println("Shutting down...")
+	var wg sync.WaitGroup
 	for _, registrar := range b.Bots {
-		err := registrar.Stop()
-		if err != nil {
-			return fmt.Errorf("error stopping %T: %w", registrar, err)
-		}
+		wg.Add(1)
+		go func(registrar Bots) {
+			defer wg.Done()
+			err := registrar.Stop()
+			if err != nil {
+				log.Printf("error stopping %T: %v", registrar, err)
+			}
+		}(registrar)
 	}
+	wg.Wait()
 	return nil
 }
