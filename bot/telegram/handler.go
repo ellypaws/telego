@@ -42,11 +42,24 @@ func (b *Bot) handleSendToThisChannel(c telebot.Context) error {
 	b.ThreadID = c.Message().ThreadID
 	log.Printf("Registered new Telegram channel: %s (%d : %d)", c.Chat().Title, b.Channel, b.ThreadID)
 
-	if err := c.Send("✅ Successfully registered this channel for message forwarding"); err != nil {
+	if err := c.Delete(); err != nil {
+		log.Printf("error deleting message: %s, does the bot have the correct permissions?", err)
+	}
+	message, err := c.Bot().Send(
+		c.Recipient(),
+		"✅ Successfully registered this channel for message forwarding",
+		&telebot.Topic{
+			ThreadID: b.ThreadID,
+		})
+	if err != nil {
 		return fmt.Errorf("error sending message: %w", err)
 	}
 
-	c.DeleteAfter(5 * time.Second)
+	time.AfterFunc(5*time.Second, func() {
+		if err := b.Bot.Delete(message); err != nil {
+			log.Printf("error deleting message: %v", err)
+		}
+	})
 	return nil
 }
 
