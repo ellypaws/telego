@@ -2,6 +2,7 @@ package telegram
 
 import (
 	"fmt"
+	"github.com/muesli/termenv"
 	"io"
 	"time"
 
@@ -28,17 +29,20 @@ func New(token string, channel int64, threadID int, output io.Writer) (*Bot, err
 		return nil, fmt.Errorf("error creating telegram bot: %w", err)
 	}
 
+	logger := log.NewWithOptions(output,
+		log.Options{
+			ReportTimestamp: true,
+			Prefix:          "[Telegram]",
+		},
+	)
+	logger.SetColorProfile(termenv.TrueColor)
+
 	return &Bot{
 		Bot:      bot,
 		Channel:  channel,
 		ThreadID: threadID,
 
-		logger: log.NewWithOptions(output,
-			log.Options{
-				ReportTimestamp: true,
-				Prefix:          "[Telegram]",
-			},
-		),
+		logger: logger,
 	}, nil
 }
 

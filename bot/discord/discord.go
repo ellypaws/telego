@@ -6,6 +6,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/charmbracelet/log"
+	"github.com/muesli/termenv"
 )
 
 type Bot struct {
@@ -27,6 +28,7 @@ func New(token string, discordChannelID string, output io.Writer) (*Bot, error) 
 			Prefix:          "[Discord]",
 		},
 	)
+	logger.SetColorProfile(termenv.TrueColor)
 
 	var channel *string
 	if discordChannelID == "" {
