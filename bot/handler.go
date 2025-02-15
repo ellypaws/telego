@@ -10,11 +10,6 @@ import (
 
 func (b *Bot) registerMainHandler() {
 	b.Discord.Session.AddHandler(func(s *discordgo.Session, m *discordgo.MessageCreate) {
-		if m.Author.Bot {
-			log.Printf("Ignoring message from bot %s", m.Author.Username)
-			return
-		}
-
 		if m.ChannelID != b.Discord.Channel.ID {
 			log.Printf("Ignoring message from channel %s, want %s", m.ChannelID, b.Discord.Channel.ID)
 			return
