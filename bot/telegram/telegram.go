@@ -2,11 +2,11 @@ package telegram
 
 import (
 	"fmt"
-	"github.com/muesli/termenv"
 	"io"
 	"time"
 
 	"github.com/charmbracelet/log"
+	"github.com/muesli/termenv"
 	"gopkg.in/telebot.v4"
 )
 

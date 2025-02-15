@@ -2,9 +2,10 @@ package parser
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/bwmarrin/discordgo"
 	"gopkg.in/telebot.v4"
-	"strings"
 )
 
 func Sendable(s *discordgo.Session, m *discordgo.Message) any {
