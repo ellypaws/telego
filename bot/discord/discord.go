@@ -2,8 +2,9 @@ package discord
 
 import (
 	"fmt"
-	"github.com/bwmarrin/discordgo"
 	"log"
+
+	"github.com/bwmarrin/discordgo"
 )
 
 type Bot struct {
@@ -13,7 +14,7 @@ type Bot struct {
 
 func (b *Bot) Start() error {
 	b.Session.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
-		log.Printf("Logged in as: %v#%v", s.State.User.Username, s.State.User.Discriminator)
+		log.Printf("Logged in as: %s#%s", s.State.User.Username, s.State.User.Discriminator)
 	})
 
 	err := b.Session.Open()

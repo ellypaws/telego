@@ -7,11 +7,11 @@ import (
 	"os/signal"
 	"strconv"
 	"syscall"
+
 	"telegram-discord/bot/discord"
 	"telegram-discord/bot/telegram"
 
 	"github.com/bwmarrin/discordgo"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
 type Bot struct {
@@ -55,6 +55,24 @@ func (b *Bot) Start() error {
 		return err
 	}
 
+	b.registerDiscordHandlers()
+
+	log.Println("Discord to Telegram mirroring bot is running. Press CTRL+C to exit.")
+	return nil
+}
+
+func (b *Bot) Wait() {
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
+	<-stop
+}
+
+func (b *Bot) Shutdown() error {
+	log.Println("Shutting down...")
+	return b.Discord.Session.Close()
+}
+
+func (b *Bot) registerDiscordHandlers() {
 	b.Discord.Session.AddHandler(func(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if m.Author.Bot {
 			return
@@ -76,30 +94,18 @@ func (b *Bot) Start() error {
 			if embed.Description != "" {
 				forwardText += fmt.Sprintf("\n%s\n", embed.Description)
 			}
+			if embed.Image != nil {
+				forwardText += fmt.Sprintf("\n%s\n", embed.Image.URL)
+			}
 		}
 
 		if forwardText == "" {
 			return
 		}
 
-		msg := tgbotapi.NewMessage(b.Telegram.Channel, forwardText)
-		_, err := b.Telegram.Bot.Send(msg)
+		err := b.Telegram.Send(forwardText)
 		if err != nil {
-			log.Printf("Error sending message to Telegram: %v", err)
+			log.Printf("Error forwarding message to Telegram: %v", err)
 		}
 	})
-
-	log.Println("Discord to Telegram mirroring bot is running. Press CTRL+C to exit.")
-	return nil
-}
-
-func (b *Bot) Wait() {
-	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
-	<-stop
-}
-
-func (b *Bot) Shutdown() error {
-	log.Println("Shutting down...")
-	return b.Discord.Session.Close()
 }

@@ -1,6 +1,8 @@
 package telegram
 
 import (
+	"fmt"
+
 	"github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
@@ -19,4 +21,14 @@ func New(token string, channel int64) (*Bot, error) {
 		Bot:     bot,
 		Channel: channel,
 	}, nil
+}
+
+func (b *Bot) Send(text string) error {
+	msg := tgbotapi.NewMessage(b.Channel, text)
+	_, err := b.Bot.Send(msg)
+	if err != nil {
+		return fmt.Errorf("error sending to telegram: %w", err)
+	}
+
+	return nil
 }

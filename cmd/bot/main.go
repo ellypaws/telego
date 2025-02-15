@@ -4,8 +4,9 @@ import (
 	"log"
 	"os"
 
-	"github.com/joho/godotenv"
 	"telegram-discord/bot"
+
+	"github.com/joho/godotenv"
 )
 
 func init() {
