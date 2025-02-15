@@ -39,15 +39,13 @@ func main() {
 	}
 
 	p := tea.NewProgram(
-		tui.NewModel(loggers),
+		tui.NewModel(loggers, b),
 		tea.WithAltScreen(),
 		tea.WithMouseCellMotion(),
 	)
 
-	go p.Run()
 	go b.Start()
-
-	b.Wait()
+	p.Run()
 
 	if err := b.Shutdown(); err != nil {
 		log.Fatalf("error shutting down bot: %v", err)

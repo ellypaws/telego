@@ -83,14 +83,6 @@ func (m *Logger) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		return m, nil
-	case tea.KeyMsg:
-		switch msg.Type {
-		case tea.KeyCtrlC:
-			m.quitting = true
-			return m, nil
-		default:
-			return m, nil
-		}
 	case Message:
 		m.messages = append(m.messages[1:], msg)
 		return m, nil

@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"sync"
 	"syscall"
+	"time"
 
 	"telegram-discord/bot/discord"
 	"telegram-discord/bot/telegram"
@@ -139,14 +140,23 @@ func (b *Bot) Shutdown() error {
 		wg.Add(1)
 		go func(registrar Bots) {
 			defer wg.Done()
-			err := registrar.Stop()
-			if err != nil {
-				registrar.Logger().Error("Failed to stop bot",
-					"type", fmt.Sprintf("%T", registrar),
-					"error", err)
-			} else {
-				registrar.Logger().Info("Bot stopped successfully",
-					"type", fmt.Sprintf("%T", registrar))
+			finished := make(chan struct{})
+			go func() {
+				defer close(finished)
+				err := registrar.Stop()
+				if err != nil {
+					registrar.Logger().Error("Failed to stop bot",
+						"type", fmt.Sprintf("%T", registrar),
+						"error", err)
+				} else {
+					registrar.Logger().Info("Bot stopped successfully",
+						"type", fmt.Sprintf("%T", registrar))
+				}
+			}()
+			select {
+			case <-finished:
+			case <-time.After(5 * time.Second):
+				registrar.Logger().Error("Bot did not stop in time", "type", fmt.Sprintf("%T", registrar))
 			}
 		}(registrar)
 	}
