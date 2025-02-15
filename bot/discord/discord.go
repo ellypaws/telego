@@ -18,9 +18,14 @@ func New(token string, discordChannelID string) (*Bot, error) {
 		return nil, err
 	}
 
-	channel, err := dg.Channel(discordChannelID)
-	if err != nil {
-		return nil, fmt.Errorf("error getting channel: %w", err)
+	var channel *discordgo.Channel
+	if discordChannelID == "" {
+		log.Printf("No channel ID provided, will not be able to send messages")
+	} else {
+		channel, err = dg.Channel(discordChannelID)
+		if err != nil {
+			return nil, fmt.Errorf("error fetching channel: %w", err)
+		}
 	}
 
 	return &Bot{

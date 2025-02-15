@@ -9,6 +9,11 @@ import (
 
 func (b *Bot) registerMainHandler() {
 	b.Discord.Session.AddHandler(func(s *discordgo.Session, m *discordgo.MessageCreate) {
+		if b.Discord.Channel == nil {
+			log.Printf("No channel registered, ignoring message")
+			return
+		}
+
 		if m.ChannelID != b.Discord.Channel.ID {
 			log.Printf("Ignoring message from channel %s, want %s", m.ChannelID, b.Discord.Channel.ID)
 			return
