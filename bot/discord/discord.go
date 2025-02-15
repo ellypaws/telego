@@ -21,7 +21,12 @@ func New(token string, discordChannelID string, output io.Writer) (*Bot, error) 
 		return nil, err
 	}
 
-	logger := log.New(output)
+	logger := log.NewWithOptions(output,
+		log.Options{
+			ReportTimestamp: true,
+			Prefix:          "[Discord]",
+		},
+	)
 
 	var channel *string
 	if discordChannelID == "" {

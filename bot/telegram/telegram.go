@@ -33,7 +33,12 @@ func New(token string, channel int64, threadID int, output io.Writer) (*Bot, err
 		Channel:  channel,
 		ThreadID: threadID,
 
-		logger: log.New(output),
+		logger: log.NewWithOptions(output,
+			log.Options{
+				ReportTimestamp: true,
+				Prefix:          "[Telegram]",
+			},
+		),
 	}, nil
 }
 
