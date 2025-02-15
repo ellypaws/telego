@@ -25,6 +25,7 @@ func (b *Bot) registerMainHandler() {
 		)
 
 		if m.MessageReference != nil {
+			b.Discord.Logger().Debug("Message has reference", "message_id", m.MessageReference.MessageID)
 			retrieve, err := b.Discord.Session.ChannelMessage(m.MessageReference.ChannelID, m.MessageReference.MessageID)
 			if err != nil {
 				b.Discord.Logger().Error("Failed to retrieve message reference",
@@ -44,6 +45,7 @@ func (b *Bot) registerMainHandler() {
 			return
 		}
 
+		b.Discord.Logger().Info("Sending message to Telegram", "message_id", message.ID, "channel_id", message.ChannelID)
 		err := b.Telegram.Send(toSend)
 		if err != nil {
 			b.Telegram.Logger().Error("Failed to forward message to Telegram",
