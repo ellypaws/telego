@@ -25,8 +25,15 @@ func main() {
 		log.Fatalf("error creating bot: %v", err)
 	}
 
-	err = b.Start()
-	if err != nil {
-		log.Fatalf("error starting bot: %v", err)
+	go func() {
+		err = b.Start()
+		if err != nil {
+			log.Fatalf("error starting bot: %v", err)
+		}
+	}()
+
+	b.Wait()
+	if err := b.Shutdown(); err != nil {
+		log.Fatalf("error shutting down bot: %v", err)
 	}
 }

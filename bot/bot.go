@@ -2,8 +2,6 @@ package bot
 
 import (
 	"fmt"
-	"github.com/bwmarrin/discordgo"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"log"
 	"os"
 	"os/signal"
@@ -11,6 +9,9 @@ import (
 	"syscall"
 	"telegram-discord/bot/discord"
 	"telegram-discord/bot/telegram"
+
+	"github.com/bwmarrin/discordgo"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
 type Bot struct {
@@ -53,7 +54,6 @@ func (b *Bot) Start() error {
 	if err != nil {
 		return err
 	}
-	defer b.Discord.Session.Close()
 
 	b.Discord.Session.AddHandler(func(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if m.Author.Bot {
@@ -65,13 +65,10 @@ func (b *Bot) Start() error {
 		}
 
 		var forwardText string
-
-		// 3a. If the message has content
 		if m.Content != "" {
 			forwardText += fmt.Sprintf("**%s**: %s\n", m.Author.Username, m.Content)
 		}
 
-		// 3b. If there are embeds, include some embed data
 		for _, embed := range m.Embeds {
 			if embed.Title != "" {
 				forwardText += fmt.Sprintf("\n**%s**", embed.Title)
@@ -81,16 +78,11 @@ func (b *Bot) Start() error {
 			}
 		}
 
-		// If there's nothing to forward (e.g. no text, no embed info), skip
 		if forwardText == "" {
 			return
 		}
 
-		// 4. Send to Telegram
 		msg := tgbotapi.NewMessage(b.Telegram.Channel, forwardText)
-		// Telegram’s Markdown parsing can be tricky, so you may need
-		// to escape characters or switch to HTML parsing.
-		// msg.ParseMode = "Markdown"
 		_, err := b.Telegram.Bot.Send(msg)
 		if err != nil {
 			log.Printf("Error sending message to Telegram: %v", err)
@@ -98,12 +90,16 @@ func (b *Bot) Start() error {
 	})
 
 	log.Println("Discord to Telegram mirroring bot is running. Press CTRL+C to exit.")
+	return nil
+}
 
-	// 6. Wait here until CTRL-C or other term signal is received.
+func (b *Bot) Wait() {
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	<-stop
+}
 
+func (b *Bot) Shutdown() error {
 	log.Println("Shutting down...")
-	return nil
+	return b.Discord.Session.Close()
 }
