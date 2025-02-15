@@ -21,12 +21,12 @@ func (b *Bot) Handlers() {
 	b.Bot.Handle(cmdUnsubscribe, b.handleUnsubscribe)
 }
 
-func (b *Bot) Send(text string) error {
+func (b *Bot) Send(content any) error {
 	if b.Channel == 0 {
 		return fmt.Errorf("channel not set")
 	}
 	chat := &telebot.Chat{ID: b.Channel}
-	_, err := b.Bot.Send(chat, text, &telebot.SendOptions{
+	_, err := b.Bot.Send(chat, content, &telebot.SendOptions{
 		ParseMode: telebot.ModeMarkdownV2,
 		ThreadID:  b.ThreadID,
 	})

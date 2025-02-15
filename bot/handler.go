@@ -1,9 +1,7 @@
 package bot
 
 import (
-	"fmt"
 	"log"
-	"strings"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -15,30 +13,26 @@ func (b *Bot) registerMainHandler() {
 			return
 		}
 
-		var forwardText strings.Builder
-		if m.Content != "" {
-			forwardText.WriteString(fmt.Sprintf("**%s**: %s\n", m.Author.Username, m.Content))
+		var (
+			message *discordgo.Message = m.Message
+		)
+
+		if m.MessageReference != nil {
+			retrieve, err := b.Discord.Session.ChannelMessage(m.MessageReference.ChannelID, m.MessageReference.MessageID)
+			if err != nil {
+				log.Printf("Error retrieving message reference: %v", err)
+				return
+			}
+			message = retrieve
 		}
 
-		for _, embed := range m.Embeds {
-			if embed.Title != "" {
-				forwardText.WriteString(fmt.Sprintf("\n**%s**", embed.Title))
-			}
-			if embed.Description != "" {
-				forwardText.WriteString(fmt.Sprintf("\n%s\n", embed.Description))
-			}
-			if embed.Image != nil {
-				forwardText.WriteString(fmt.Sprintf("\n%s\n", embed.Image.URL))
-			}
-		}
-
-		if forwardText.Len() == 0 {
-			log.Printf("Ignoring message with no content")
+		toSend := sendable(message)
+		if toSend == nil {
+			log.Printf("No content to send")
 			return
 		}
 
-		log.Printf("Forwarding message to Telegram: %s", forwardText.String())
-		err := b.Telegram.Send(forwardText.String())
+		err := b.Telegram.Send(toSend)
 		if err != nil {
 			log.Printf("Error forwarding message to Telegram: %v", err)
 		}
