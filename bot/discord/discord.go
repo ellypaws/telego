@@ -9,7 +9,7 @@ import (
 
 type Bot struct {
 	Session *discordgo.Session
-	Channel *discordgo.Channel
+	Channel *string
 }
 
 func New(token string, discordChannelID string) (*Bot, error) {
@@ -18,14 +18,11 @@ func New(token string, discordChannelID string) (*Bot, error) {
 		return nil, err
 	}
 
-	var channel *discordgo.Channel
+	var channel *string
 	if discordChannelID == "" {
-		log.Printf("No channel ID provided, will not be able to send messages")
+		logger.Printf("No channel ID provided, will not be able to send messages")
 	} else {
-		channel, err = dg.Channel(discordChannelID)
-		if err != nil {
-			return nil, fmt.Errorf("error fetching channel: %w", err)
-		}
+		channel = &discordChannelID
 	}
 
 	return &Bot{

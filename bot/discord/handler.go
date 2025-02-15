@@ -96,8 +96,8 @@ func (b *Bot) handleRegister(s *discordgo.Session, i *discordgo.InteractionCreat
 }
 
 func (b *Bot) handleUnregister(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	if b.Channel == nil || b.Channel.ID != i.ChannelID {
-		respond(s, i, "This channel is not currently registered for message forwarding")
+	if b.Channel == nil || *b.Channel != i.ChannelID {
+		b.respond(s, i, "This channel is not currently registered for message forwarding")
 		return
 	}
 

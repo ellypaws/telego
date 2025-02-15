@@ -14,8 +14,8 @@ func (b *Bot) registerMainHandler() {
 			return
 		}
 
-		if m.ChannelID != b.Discord.Channel.ID {
-			log.Printf("Ignoring message from channel %s, want %s", m.ChannelID, b.Discord.Channel.ID)
+		if m.ChannelID != *b.Discord.Channel {
+			log.Printf("Ignoring message from channel %s, want %s", m.ChannelID, *b.Discord.Channel)
 			return
 		}
 
