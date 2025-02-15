@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"telegram-discord/bot"
+	"telegram-discord/lib"
 
 	"github.com/joho/godotenv"
 )
@@ -16,6 +17,8 @@ func init() {
 }
 
 func main() {
+	defer lib.LogOutput(os.Stdout)()
+
 	b, err := bot.New(bot.Config{
 		DiscordToken:      os.Getenv("DISCORD_TOKEN"),
 		DiscordChannelID:  os.Getenv("DISCORD_CHANNEL_ID"),
