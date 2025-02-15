@@ -51,7 +51,7 @@ func (s *Stack) Init() tea.Cmd {
 }
 
 func (s *Stack) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	var cmds []tea.Cmd
+	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
@@ -62,21 +62,25 @@ func (s *Stack) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		s.height = msg.Height
 
 		width := s.calculateWidth()
-		for i, l := range s.loggers {
-			if model, cmd := l.Update(tea.WindowSizeMsg{
-				Width:  width - s.padding,
-				Height: msg.Height,
-			}); cmd != nil {
-				s.loggers[i] = model.(*Logger)
-				cmds = append(cmds, cmd)
-			}
-		}
+		return s.propagate(tea.WindowSizeMsg{
+			Width:  width - s.padding,
+			Height: msg.Height,
+		}, cmd)
 	default:
-		for i, l := range s.loggers {
-			if model, cmd := l.Update(msg); cmd != nil {
-				s.loggers[i] = model.(*Logger)
-				cmds = append(cmds, cmd)
-			}
+		return s.propagate(msg, cmd)
+	}
+}
+
+func (s *Stack) propagate(msg tea.Msg, cmd tea.Cmd) (tea.Model, tea.Cmd) {
+	cmds := make([]tea.Cmd, 0, s.Len())
+	if cmd != nil {
+		cmds = append(cmds, cmd)
+	}
+
+	for i, l := range s.loggers {
+		if model, cmd := l.Update(msg); cmd != nil {
+			s.loggers[i] = model.(*Logger)
+			cmds = append(cmds, cmd)
 		}
 	}
 
