@@ -130,7 +130,7 @@ func (n *TimestampNode) String() string {
 }
 
 func formatRelativeFull(t time.Time) string {
-	return fmt.Sprintf("*%s* (%s)", formatRelativeTime(t), escapeTelegram(t.Format("January 02, 2006 3:04 PM MST")))
+	return fmt.Sprintf("*%s* \\(%s\\)", formatRelativeTime(t), escapeTelegram(t.Format("January 02, 2006 3:04 PM MST")))
 }
 
 func formatRelativeTime(t time.Time) string {
