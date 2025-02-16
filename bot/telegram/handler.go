@@ -86,21 +86,17 @@ func (b *Bot) handleSendToThisChannel(c telebot.Context) error {
 		return fmt.Errorf("error sending message: %w", err)
 	}
 
-	if err := lib.Set("TELEGRAM_CHANNEL_ID", fmt.Sprintf("%d", b.Channel)); err != nil {
+	if err := lib.SetWithLog(b.logger, map[string]string{
+		"TELEGRAM_CHANNEL_ID": fmt.Sprintf("%d", b.Channel),
+		"TELEGRAM_THREAD_ID":  fmt.Sprintf("%d", b.ThreadID),
+	}); err != nil {
 		b.logger.Error(
-			"Failed to save channel ID to .env",
+			"Error setting environment variables",
 			"error", err,
 			"channel_id", b.Channel,
+			"thread_id", b.ThreadID,
 		)
-	}
-	if b.ThreadID != 0 {
-		if err := lib.Set("TELEGRAM_THREAD_ID", fmt.Sprintf("%d", b.ThreadID)); err != nil {
-			b.logger.Error(
-				"Failed to save thread ID to .env",
-				"error", err,
-				"channel_id", b.Channel,
-			)
-		}
+		return fmt.Errorf("error setting environment variables: %w", err)
 	}
 
 	b.logger.Info(
@@ -130,11 +126,22 @@ func (b *Bot) handleUnsubscribe(c telebot.Context) error {
 	}
 
 	oldChannel := b.Channel
-	b.Channel = 0 // Reset channel ID
-	b.logger.Info("Telegram channel unregistered",
+	oldThread := b.ThreadID
+	b.Channel = 0
+	b.logger.Info(
+		"Telegram channel unregistered",
 		"channel_id", oldChannel,
 		"channel_title", c.Chat().Title,
-		"user", c.Sender().Username)
+		"thread_id", oldThread,
+		"user", c.Sender().Username,
+	)
+
+	if err := lib.SetWithLog(b.logger, map[string]string{
+		"TELEGRAM_CHANNEL_ID": "",
+		"TELEGRAM_THREAD_ID":  "",
+	}); err != nil {
+		b.logger.Error("Error resetting environment variables", "error", err)
+	}
 
 	return c.Send("✅ Successfully unregistered this channel from message forwarding")
 }
