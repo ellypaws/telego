@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"telegram-discord/bot"
+	"telegram-discord/lib"
 	"telegram-discord/tui"
 	"telegram-discord/tui/components/logger"
 )
@@ -24,15 +25,21 @@ func init() {
 func main() {
 	loggers := logger.NewStack(discordLogger, telegramLogger)
 
+	writers, closer, err := lib.NewLogWriters(loggers.Get(discordLogger), loggers.Get(telegramLogger))
+	if err != nil {
+		log.Fatalf("error creating log writers: %v", err)
+	}
+	defer closer()
+
 	b, err := bot.New(bot.Config{
 		DiscordToken:     os.Getenv("DISCORD_TOKEN"),
 		DiscordChannelID: os.Getenv("DISCORD_CHANNEL_ID"),
-		DiscordLogger:    loggers.Get(discordLogger),
+		DiscordLogger:    writers[0],
 
 		TelegramToken:     os.Getenv("TELEGRAM_TOKEN"),
 		TelegramChannelID: os.Getenv("TELEGRAM_CHANNEL_ID"),
 		TelegramThreadID:  os.Getenv("TELEGRAM_THREAD_ID"),
-		TelegramLogger:    loggers.Get(telegramLogger),
+		TelegramLogger:    writers[1],
 	})
 	if err != nil {
 		log.Fatalf("error creating bot: %v", err)
