@@ -106,7 +106,7 @@ type TimestampNode struct {
 }
 
 func (n *TimestampNode) String() string {
-	t := time.Unix(n.Timestamp, 0)
+	t := time.Unix(n.Timestamp, 0).UTC()
 	var formatted string
 	switch n.Style {
 	case "t":
