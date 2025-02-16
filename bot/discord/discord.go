@@ -24,6 +24,7 @@ func New(token string, discordChannelID string, output io.Writer) (*Bot, error) 
 
 	logger := log.NewWithOptions(output,
 		log.Options{
+			Level:           log.DebugLevel,
 			ReportTimestamp: true,
 			Prefix:          "[Discord]",
 		},
