@@ -20,13 +20,13 @@ func Sendable(s *discordgo.Session, m *discordgo.Message, p Parser) any {
 			if isImage(attachment.ContentType) {
 				return &telebot.Photo{
 					File:    telebot.FromURL(attachment.URL),
-					Caption: Parse(s, m.Content),
+					Caption: p(s, m.Content),
 				}
 			}
 
 			return &telebot.Document{
 				File:    telebot.FromURL(attachment.URL),
-				Caption: Parse(s, m.Content),
+				Caption: p(s, m.Content),
 			}
 		}
 	}
@@ -53,7 +53,7 @@ func Sendable(s *discordgo.Session, m *discordgo.Message, p Parser) any {
 		return text
 	}
 
-	return Parse(s, m.Content)
+	return p(s, m.Content)
 }
 
 func formatEmbedToMarkdownV2(s *discordgo.Session, e *discordgo.MessageEmbed, p Parser) string {
