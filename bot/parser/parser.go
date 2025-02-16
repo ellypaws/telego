@@ -121,10 +121,10 @@ func replaceMentions(s *discordgo.Session, text string) string {
 
 		user, err := s.User(matches[1])
 		if err != nil {
-			return fmt.Sprintf(`\<\@%s\>`, matches[1])
+			return fmt.Sprintf(`<@%s>`, matches[1])
 		}
-		// Telegram mentions are usually @username.
-		return fmt.Sprintf(`\@%s`, user.Username)
+
+		return fmt.Sprintf(`@%s`, user.Username)
 	})
 
 	// Role mentions: e.g. <@&ID>
@@ -136,14 +136,14 @@ func replaceMentions(s *discordgo.Session, text string) string {
 		}
 		roles, err := s.GuildRoles(matches[1])
 		if err != nil {
-			return fmt.Sprintf(`\<\@&%s\>`, matches[1])
+			return fmt.Sprintf(`<@&%s>`, matches[1])
 		}
 		for _, role := range roles {
 			if role.ID == matches[1] {
-				return fmt.Sprintf(`\@%s`, role.Name)
+				return fmt.Sprintf(`@%s`, role.Name)
 			}
 		}
-		return fmt.Sprintf(`\<\@&%s\>`, matches[1])
+		return fmt.Sprintf(`<@&%s>`, matches[1])
 	})
 
 	// Channel mentions: e.g. <#ID>
@@ -155,10 +155,10 @@ func replaceMentions(s *discordgo.Session, text string) string {
 		}
 		channel, err := s.Channel(matches[1])
 		if err != nil {
-			return fmt.Sprintf(`\<\#%s\>`, matches[1])
+			return fmt.Sprintf(`<#%s>`, matches[1])
 		}
 
-		return fmt.Sprintf(`\#%s`, channel.Name)
+		return fmt.Sprintf(`#%s`, channel.Name)
 	})
 
 	return text
