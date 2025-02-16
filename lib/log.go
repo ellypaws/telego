@@ -6,23 +6,6 @@ import (
 	"os"
 )
 
-// logWriter wraps an io.Writer and also writes any data to a log file.
-type logWriter struct {
-	dest   io.Writer
-	logger io.Writer
-}
-
-// Write writes data to the original destination and then appends it to the log.
-func (lw *logWriter) Write(p []byte) (int, error) {
-	n, err := lw.dest.Write(p)
-	if err != nil {
-		return n, err
-	}
-
-	_, err = lw.logger.Write(p)
-	return n, err
-}
-
 // NewLogWriters takes any number of io.Writer and returns a slice of wrapped writers.
 // When you write to any of these writers, the data will also be appended to "log.txt".
 // It also returns a cleanup function that you should call to close the log file.
@@ -36,10 +19,7 @@ func NewLogWriters(writers ...io.Writer) ([]io.Writer, func() error, error) {
 	// Wrap each provided writer with our logWriter.
 	wrapped := make([]io.Writer, len(writers))
 	for i, w := range writers {
-		wrapped[i] = &logWriter{
-			dest:   w,
-			logger: f,
-		}
+		wrapped[i] = io.MultiWriter(w, f)
 	}
 
 	return wrapped, f.Close, nil
