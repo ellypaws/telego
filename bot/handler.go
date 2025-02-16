@@ -8,15 +8,20 @@ import (
 
 func (b *Bot) registerMainHandler() {
 	b.Discord.Session.AddHandler(func(s *discordgo.Session, m *discordgo.MessageCreate) {
-		if b.Discord.Channel == nil {
+		if b.Discord.Channel == "" {
 			b.Discord.Logger().Info("Message ignored - no channel registered")
 			return
 		}
 
-		if m.ChannelID != *b.Discord.Channel {
+		if b.Telegram.Channel == 0 {
+			b.Discord.Logger().Info("Message ignored - no channel registered")
+			return
+		}
+
+		if m.ChannelID != b.Discord.Channel {
 			b.Discord.Logger().Debug("Message ignored - wrong channel",
 				"received_channel", m.ChannelID,
-				"target_channel", *b.Discord.Channel)
+				"target_channel", b.Discord.Channel)
 			return
 		}
 

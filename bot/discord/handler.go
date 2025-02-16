@@ -84,7 +84,7 @@ func (b *Bot) handleRegister(s *discordgo.Session, i *discordgo.InteractionCreat
 		channelID = i.ChannelID
 	}
 
-	b.Channel = &channelID
+	b.Channel = channelID
 
 	if err := lib.Set("DISCORD_CHANNEL_ID", channelID); err != nil {
 		b.logger.Error("Failed to save channel ID to .env",
@@ -102,13 +102,13 @@ func (b *Bot) handleRegister(s *discordgo.Session, i *discordgo.InteractionCreat
 }
 
 func (b *Bot) handleUnregister(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	if b.Channel == nil || *b.Channel != i.ChannelID {
+	if b.Channel == "" || b.Channel != i.ChannelID {
 		b.respond(s, i, "This channel is not currently registered for message forwarding")
 		return
 	}
 
-	oldChannel := *b.Channel
-	b.Channel = nil
+	oldChannel := b.Channel
+	b.Channel = ""
 	b.logger.Info("Discord channel unregistered",
 		"channel_id", oldChannel,
 		"guild_id", i.GuildID,

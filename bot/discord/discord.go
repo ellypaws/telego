@@ -11,7 +11,7 @@ import (
 
 type Bot struct {
 	Session *discordgo.Session
-	Channel *string
+	Channel string
 
 	logger *log.Logger
 }
@@ -30,11 +30,11 @@ func New(token string, discordChannelID string, output io.Writer) (*Bot, error) 
 	)
 	logger.SetColorProfile(termenv.TrueColor)
 
-	var channel *string
+	var channel string
 	if discordChannelID == "" {
 		logger.Printf("No channel ID provided, will not be able to send messages")
 	} else {
-		channel = &discordChannelID
+		channel = discordChannelID
 	}
 
 	return &Bot{
