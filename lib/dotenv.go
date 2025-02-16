@@ -39,7 +39,7 @@ func SetWithLog(logger *log.Logger, envs map[string]string) error {
 	}
 
 	if len(envs) == 0 {
-		logger.Info("No environment variables to set")
+		logger.Warn("No environment variables to set")
 		return nil
 	}
 
@@ -50,7 +50,11 @@ func SetWithLog(logger *log.Logger, envs map[string]string) error {
 	}
 
 	for key, value := range envs {
-		logger.Info("Setting environment variable", "key", key, "value", value)
+		logger.Debug(
+			"Setting environment variable",
+			"key", key,
+			"value", value,
+		)
 		exist[key] = value
 	}
 
