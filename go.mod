@@ -8,7 +8,9 @@ require (
 	github.com/charmbracelet/bubbletea v1.3.3
 	github.com/charmbracelet/lipgloss v1.0.0
 	github.com/charmbracelet/log v0.4.0
+	github.com/delthas/discord-formatting v0.0.0-20220730152124-232054d9d66b
 	github.com/joho/godotenv v1.5.1
+	github.com/muesli/termenv v0.15.2
 	gopkg.in/telebot.v4 v4.0.0-beta.4
 )
 
@@ -25,7 +27,6 @@ require (
 	github.com/mattn/go-runewidth v0.0.16 // indirect
 	github.com/muesli/ansi v0.0.0-20230316100256-276c6243b2f6 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
-	github.com/muesli/termenv v0.15.2 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4 // indirect
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d // indirect

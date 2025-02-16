@@ -2,6 +2,7 @@ package bot
 
 import (
 	"telegram-discord/bot/parser"
+	"telegram-discord/bot/parser/parserv2"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -59,7 +60,7 @@ func (b *Bot) registerMainHandler() {
 			message = retrieve
 		}
 
-		toSend := parser.Sendable(s, message)
+		toSend := parser.Sendable(s, message, parserv2.Parse)
 		if toSend == nil {
 			b.Telegram.Logger().Debug(
 				"Skipping message - no content to forward",
