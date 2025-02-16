@@ -100,30 +100,43 @@ func (b *Bot) Start() error {
 		wg.Add(1)
 		go func(bot Bots) {
 			defer wg.Done()
-			bot.Logger().Info("Starting bot", "type", fmt.Sprintf("%T", bot))
+			bot.Logger().Info(
+				"Starting bot",
+				"type", fmt.Sprintf("%T", bot),
+			)
 			err := bot.Start()
 			if err != nil {
-				bot.Logger().Error("Failed to start bot",
+				bot.Logger().Error(
+					"Failed to start bot",
 					"type", fmt.Sprintf("%T", bot),
-					"error", err)
+					"error", err,
+				)
 				return
 			}
-			bot.Logger().Info("Bot started successfully",
-				"type", fmt.Sprintf("%T", bot))
+			bot.Logger().Info(
+				"Bot started successfully",
+				"type", fmt.Sprintf("%T", bot),
+			)
 
-			bot.Logger().Info("Registering commands",
-				"type", fmt.Sprintf("%T", bot))
+			bot.Logger().Info(
+				"Registering commands",
+				"type", fmt.Sprintf("%T", bot),
+			)
 			err = bot.Commands()
 			if err != nil {
-				bot.Logger().Error("Failed to register commands",
+				bot.Logger().Error(
+					"Failed to register commands",
 					"type", fmt.Sprintf("%T", bot),
-					"error", err)
+					"error", err,
+				)
 				return
 			}
-			bot.Logger().Info("Commands registered successfully",
-				"type", fmt.Sprintf("%T", bot))
+			bot.Logger().Info(
+				"Commands registered successfully",
+				"type", fmt.Sprintf("%T", bot),
+			)
 
-			go bot.Handlers()
+			bot.Handlers()
 		}(bot)
 	}
 	wg.Wait()
@@ -151,18 +164,25 @@ func (b *Bot) Shutdown() error {
 				defer close(finished)
 				err := registrar.Stop()
 				if err != nil {
-					registrar.Logger().Error("Failed to stop bot",
+					registrar.Logger().Error(
+						"Failed to stop bot",
 						"type", fmt.Sprintf("%T", registrar),
-						"error", err)
+						"error", err,
+					)
 				} else {
-					registrar.Logger().Info("Bot stopped successfully",
-						"type", fmt.Sprintf("%T", registrar))
+					registrar.Logger().Info(
+						"Bot stopped successfully",
+						"type", fmt.Sprintf("%T", registrar),
+					)
 				}
 			}()
 			select {
 			case <-finished:
 			case <-time.After(5 * time.Second):
-				registrar.Logger().Error("Bot did not stop in time", "type", fmt.Sprintf("%T", registrar))
+				registrar.Logger().Error(
+					"Bot did not stop in time",
+					"type", fmt.Sprintf("%T", registrar),
+				)
 			}
 		}(registrar)
 	}

@@ -25,12 +25,16 @@ func (b *Bot) Handlers() {
 
 func (b *Bot) Send(content any) error {
 	if b.Channel == 0 {
-		b.logger.Warn(
-			"Cannot send message - channel not set",
-		)
+		b.logger.Warn("Cannot send message - channel not set")
 		return fmt.Errorf("channel not set")
 	}
 
+	b.logger.Debug(
+		"Sending message to Telegram",
+		"channel_id", b.Channel,
+		"thread_id", b.ThreadID,
+		"content_type", fmt.Sprintf("%T", content),
+	)
 	chat := &telebot.Chat{ID: b.Channel}
 	_, err := b.Bot.Send(chat, content, &telebot.SendOptions{
 		ParseMode: telebot.ModeMarkdownV2,
@@ -47,7 +51,7 @@ func (b *Bot) Send(content any) error {
 		return fmt.Errorf("error sending to telegram: %w", err)
 	}
 
-	b.logger.Debug(
+	b.logger.Info(
 		"Message sent successfully",
 		"channel_id", b.Channel,
 		"thread_id", b.ThreadID,
@@ -123,11 +127,10 @@ func (b *Bot) handleUnsubscribe(c telebot.Context) error {
 	)
 
 	b.Channel = 0
-	b.ThreadID = 0	
+	b.ThreadID = 0
 
 	return nil
 }
-
 
 func (b *Bot) tempReply(c telebot.Context, content string) error {
 	message, err := c.Bot().Send(

@@ -3,8 +3,9 @@ package discord
 import (
 	"fmt"
 
-	"github.com/bwmarrin/discordgo"
 	"telegram-discord/lib"
+
+	"github.com/bwmarrin/discordgo"
 )
 
 func (b *Bot) Commands() error {
@@ -47,14 +48,25 @@ func (b *Bot) Commands() error {
 
 	for _, cmd := range commands {
 		if _, ok := isRegistered[cmd.Name]; ok {
-			b.logger.Info("Command already registered", "command", cmd.Name)
+			b.logger.Debug(
+				"Command already registered",
+				"command", cmd.Name,
+			)
 			continue
 		}
 		_, err := b.Session.ApplicationCommandCreate(b.Session.State.User.ID, "", cmd)
 		if err != nil {
+			b.logger.Error(
+				"Failed to register command",
+				"error", err,
+				"command", cmd.Name,
+			)
 			return fmt.Errorf("error creating command %s: %w", cmd.Name, err)
 		}
-		b.logger.Info("Command registered successfully", "command", cmd.Name)
+		b.logger.Info(
+			"Command registered successfully",
+			"command", cmd.Name,
+		)
 	}
 
 	return nil
@@ -80,39 +92,72 @@ func (b *Bot) handleRegister(s *discordgo.Session, i *discordgo.InteractionCreat
 	if len(i.ApplicationCommandData().Options) > 0 {
 		channel := i.ApplicationCommandData().Options[0].ChannelValue(s)
 		channelID = channel.ID
+		b.logger.Debug(
+			"Using specified channel for registration",
+			"channel_id", channelID,
+			"channel_name", channel.Name,
+			"user", i.Member.User.Username,
+		)
 	} else {
 		channelID = i.ChannelID
+		b.logger.Debug(
+			"Using current channel for registration",
+			"channel_id", channelID,
+			"user", i.Member.User.Username,
+		)
 	}
 
 	b.Channel = channelID
 
 	if err := lib.Set("DISCORD_CHANNEL_ID", channelID); err != nil {
-		b.logger.Error("Failed to save channel ID to .env",
+		b.logger.Error(
+			"Failed to save channel configuration",
 			"error", err,
 			"channel_id", channelID,
+			"user", i.Member.User.Username,
 		)
 	}
 
-	b.logger.Info("Discord channel registered",
+	b.logger.Info(
+		"Channel registered for message forwarding",
 		"channel_id", channelID,
 		"guild_id", i.GuildID,
-		"user", i.Member.User.Username)
+		"user", i.Member.User.Username,
+	)
 
 	b.respond(s, i, fmt.Sprintf("Successfully registered channel <#%s> for message forwarding", channelID))
 }
 
 func (b *Bot) handleUnregister(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	if b.Channel == "" || b.Channel != i.ChannelID {
+		b.logger.Debug(
+			"Unregister attempt for non-registered channel",
+			"channel_id", i.ChannelID,
+			"registered_channel", b.Channel,
+			"user", i.Member.User.Username,
+		)
 		b.respond(s, i, "This channel is not currently registered for message forwarding")
 		return
 	}
 
 	oldChannel := b.Channel
 	b.Channel = ""
-	b.logger.Info("Discord channel unregistered",
-		"channel_id", oldChannel,
+
+	if err := lib.Set("DISCORD_CHANNEL_ID", ""); err != nil {
+		b.logger.Error(
+			"Failed to save channel configuration",
+			"error", err,
+			"old_channel_id", oldChannel,
+			"user", i.Member.User.Username,
+		)
+	}
+
+	b.logger.Info(
+		"Channel unregistered from message forwarding",
+		"old_channel_id", oldChannel,
 		"guild_id", i.GuildID,
-		"user", i.Member.User.Username)
+		"user", i.Member.User.Username,
+	)
 
 	b.respond(s, i, "Successfully unregistered this channel from message forwarding")
 }
@@ -126,10 +171,14 @@ func (b *Bot) respond(s *discordgo.Session, i *discordgo.InteractionCreate, cont
 		},
 	})
 	if err != nil {
-		b.logger.Error("Failed to respond to interaction",
+		b.logger.Error(
+			"Failed to respond to interaction",
 			"error", err,
 			"interaction_id", i.ID,
-			"channel_id", i.ChannelID)
+			"channel_id", i.ChannelID,
+			"content", content,
+			"user", i.Member.User.Username,
+		)
 	}
 }
 
@@ -142,10 +191,13 @@ func (b *Bot) respondWithError(s *discordgo.Session, i *discordgo.InteractionCre
 		},
 	})
 	if err != nil {
-		b.logger.Error("Failed to respond to interaction with error",
+		b.logger.Error(
+			"Failed to respond to interaction with error",
 			"error", err,
 			"interaction_id", i.ID,
 			"channel_id", i.ChannelID,
-			"content", content)
+			"content", content,
+			"user", i.Member.User.Username,
+		)
 	}
 }

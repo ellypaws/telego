@@ -51,7 +51,10 @@ func (b *Bot) Logger() *log.Logger {
 
 func (b *Bot) Start() error {
 	b.Session.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
-		b.logger.Info("Discord bot logged in", "user", fmt.Sprintf("%s#%s", s.State.User.Username, s.State.User.Discriminator))
+		b.logger.Info(
+			"Discord bot logged in",
+			"user", fmt.Sprintf("%s#%s", s.State.User.Username, s.State.User.Discriminator),
+		)
 	})
 
 	err := b.Session.Open()
