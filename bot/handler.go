@@ -8,13 +8,18 @@ import (
 
 func (b *Bot) registerMainHandler() {
 	b.Discord.Session.AddHandler(func(s *discordgo.Session, m *discordgo.MessageCreate) {
+		if m.Author.ID == s.State.User.ID {
+			b.Discord.Logger().Warn("Skipping message - self message")
+			return
+		}
+
 		if b.Discord.Channel == "" {
-			b.Discord.Logger().Debug("Skipping message - Discord channel not registered")
+			b.Discord.Logger().Warn("Skipping message - Discord channel not registered")
 			return
 		}
 
 		if b.Telegram.Channel == 0 {
-			b.Discord.Logger().Debug("Skipping message - Telegram channel not registered")
+			b.Telegram.Logger().Warn("Skipping message - Telegram channel not registered")
 			return
 		}
 
