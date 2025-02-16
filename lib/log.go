@@ -46,8 +46,7 @@ func NewLogWriters(writers ...io.Writer) ([]io.Writer, func() error, error) {
 }
 
 func LogOutput(writer io.Writer) func() {
-	logfile := `log.txt`
-	f, _ := os.OpenFile(logfile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
+	f, _ := os.OpenFile("log.txt", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
 
 	mw := io.MultiWriter(writer, f)
 	r, w, _ := os.Pipe()
