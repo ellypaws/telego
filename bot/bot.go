@@ -58,6 +58,12 @@ type Config struct {
 }
 
 func New(config Config) (*Bot, error) {
+	if config.DiscordToken == "" {
+		return nil, fmt.Errorf("discord token is required")
+	}
+	if config.TelegramToken == "" {
+		return nil, fmt.Errorf("telegram token is required")
+	}
 	discordBot, err := discord.New(config.DiscordToken, config.DiscordChannelID, config.DiscordLogger)
 	if err != nil {
 		return nil, fmt.Errorf("error creating Discord bot: %w", err)
