@@ -61,6 +61,16 @@ func (b *Bot) Send(content any) error {
 }
 
 func (b *Bot) handleSendToThisChannel(c telebot.Context) error {
+	if b.Channel == c.Chat().ID && b.ThreadID == c.Message().ThreadID {
+		b.logger.Warn(
+			"Channel already registered for message forwarding",
+			"channel_id", b.Channel,
+			"thread_id", b.ThreadID,
+			"channel_title", c.Chat().Title,
+			"user", c.Sender().Username,
+		)
+		return b.tempReply(c, "This channel is already registered for message forwarding")
+	}
 	b.Channel = c.Chat().ID
 	b.ThreadID = c.Message().ThreadID
 

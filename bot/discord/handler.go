@@ -107,6 +107,15 @@ func (b *Bot) handleRegister(s *discordgo.Session, i *discordgo.InteractionCreat
 		)
 	}
 
+	if b.Channel == channelID {
+		b.logger.Warn(
+			"Channel already registered for message forwarding",
+			"channel_id", channelID,
+			"user", i.Member.User.Username,
+		)
+		b.respond(s, i, "This channel is already registered for message forwarding")
+		return
+	}
 	b.Channel = channelID
 
 	if err := lib.Set("DISCORD_CHANNEL_ID", channelID); err != nil {
