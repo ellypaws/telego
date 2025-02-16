@@ -52,7 +52,11 @@ func (b *Bot) Logger() *log.Logger {
 
 func (b *Bot) Start() error {
 	go b.Bot.Start()
-	b.logger.Info("Telegram bot started")
+	b.logger.Info(
+		"Telegram bot started",
+		"channel_id", b.Channel,
+		"thread_id", b.ThreadID,
+	)
 	return nil
 }
 
