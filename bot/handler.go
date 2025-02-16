@@ -60,6 +60,12 @@ func (b *Bot) registerMainHandler() {
 			message = retrieve
 		}
 
+		b.Discord.Logger().Debug(
+			"Processing message",
+			"message_id", message.ID,
+			"channel_id", message.ChannelID,
+			"author", message.Author.Username,
+		)
 		toSend := parser.Sendable(s, message, parserv2.Parse)
 		if toSend == nil {
 			b.Telegram.Logger().Debug(
