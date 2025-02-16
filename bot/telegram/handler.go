@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"time"
 
-	"gopkg.in/telebot.v4"
 	"telegram-discord/lib"
+
+	"gopkg.in/telebot.v4"
 )
 
 const (
@@ -24,8 +25,12 @@ func (b *Bot) Handlers() {
 
 func (b *Bot) Send(content any) error {
 	if b.Channel == 0 {
+		b.logger.Warn(
+			"Cannot send message - channel not set",
+		)
 		return fmt.Errorf("channel not set")
 	}
+
 	chat := &telebot.Chat{ID: b.Channel}
 	_, err := b.Bot.Send(chat, content, &telebot.SendOptions{
 		ParseMode: telebot.ModeMarkdownV2,
@@ -33,20 +38,20 @@ func (b *Bot) Send(content any) error {
 	})
 	if err != nil {
 		b.logger.Error(
-			"Failed to send message to Telegram",
+			"Failed to send message",
 			"error", err,
 			"channel_id", b.Channel,
 			"thread_id", b.ThreadID,
-			"content", content,
+			"content_type", fmt.Sprintf("%T", content),
 		)
 		return fmt.Errorf("error sending to telegram: %w", err)
 	}
 
-	b.logger.Info(
-		"Message sent to Telegram",
+	b.logger.Debug(
+		"Message sent successfully",
 		"channel_id", b.Channel,
 		"thread_id", b.ThreadID,
-		"content", content,
+		"content_type", fmt.Sprintf("%T", content),
 	)
 	return nil
 }
@@ -54,34 +59,10 @@ func (b *Bot) Send(content any) error {
 func (b *Bot) handleSendToThisChannel(c telebot.Context) error {
 	b.Channel = c.Chat().ID
 	b.ThreadID = c.Message().ThreadID
-	b.logger.Info(
-		"Telegram channel registered",
-		"channel_id", b.Channel,
-		"thread_id", b.ThreadID,
-		"channel_title", c.Chat().Title,
-		"user", c.Sender().Username,
-	)
 
-	if err := c.Delete(); err != nil {
-		b.logger.Error(
-			"Failed to delete command message",
-			"error", err,
-			"channel_id", b.Channel,
-			"message_id", c.Message().ID,
-		)
-	}
-	message, err := c.Bot().Send(
-		c.Recipient(),
-		"✅ Successfully registered this channel for message forwarding",
-		&telebot.Topic{ThreadID: b.ThreadID}, &telebot.SendOptions{ReplyTo: c.Message()})
+	err := b.tempReply(c, "✅ Successfully registered this channel for message forwarding")
 	if err != nil {
-		b.logger.Error(
-			"Failed to send confirmation message",
-			"error", err,
-			"channel_id", b.Channel,
-			"thread_id", b.ThreadID,
-		)
-		return fmt.Errorf("error sending message: %w", err)
+		return err
 	}
 
 	if err := lib.SetWithLog(b.logger, map[string]string{
@@ -89,57 +70,105 @@ func (b *Bot) handleSendToThisChannel(c telebot.Context) error {
 		"TELEGRAM_THREAD_ID":  fmt.Sprintf("%d", b.ThreadID),
 	}); err != nil {
 		b.logger.Error(
-			"Error setting environment variables",
+			"Failed to save channel configuration",
 			"error", err,
 			"channel_id", b.Channel,
 			"thread_id", b.ThreadID,
+			"user", c.Sender().Username,
 		)
 		return fmt.Errorf("error setting environment variables: %w", err)
 	}
 
 	b.logger.Info(
-		"Telegram channel registered",
+		"Channel registered for message forwarding",
 		"channel_id", b.Channel,
 		"thread_id", b.ThreadID,
 		"channel_title", c.Chat().Title,
 		"user", c.Sender().Username,
 	)
 
-	time.AfterFunc(5*time.Second, func() {
-		if err := b.Bot.Delete(message); err != nil {
-			b.logger.Error(
-				"Failed to delete confirmation message",
-				"error", err,
-				"channel_id", b.Channel,
-				"message_id", message.ID,
-			)
-		}
-	})
 	return nil
 }
 
 func (b *Bot) handleUnsubscribe(c telebot.Context) error {
 	if c.Chat().ID != b.Channel {
-		return c.Send("This channel is not currently registered for message forwarding")
+		return b.tempReply(c, "This channel is not currently registered for message forwarding")
 	}
-
-	oldChannel := b.Channel
-	oldThread := b.ThreadID
-	b.Channel = 0
-	b.logger.Info(
-		"Telegram channel unregistered",
-		"channel_id", oldChannel,
-		"channel_title", c.Chat().Title,
-		"thread_id", oldThread,
-		"user", c.Sender().Username,
-	)
 
 	if err := lib.SetWithLog(b.logger, map[string]string{
 		"TELEGRAM_CHANNEL_ID": "",
 		"TELEGRAM_THREAD_ID":  "",
 	}); err != nil {
-		b.logger.Error("Error resetting environment variables", "error", err)
+		b.logger.Error(
+			"Failed to save channel configuration",
+			"error", err,
+			"old_channel_id", b.Channel,
+			"old_thread_id", b.ThreadID,
+			"user", c.Sender().Username,
+		)
+		return fmt.Errorf("error setting environment variables: %w", err)
 	}
 
-	return c.Send("✅ Successfully unregistered this channel from message forwarding")
+	err := b.tempReply(c, "✅ Successfully unregistered this channel from message forwarding")
+	if err != nil {
+		return err
+	}
+
+	b.logger.Info(
+		"Channel unregistered from message forwarding",
+		"old_channel_id", b.Channel,
+		"old_thread_id", b.ThreadID,
+		"channel_title", c.Chat().Title,
+		"user", c.Sender().Username,
+	)
+
+	b.Channel = 0
+	b.ThreadID = 0	
+
+	return nil
+}
+
+
+func (b *Bot) tempReply(c telebot.Context, content string) error {
+	message, err := c.Bot().Send(
+		c.Recipient(),
+		content,
+		&telebot.Topic{ThreadID: b.ThreadID},
+		&telebot.SendOptions{ReplyTo: c.Message()},
+	)
+
+	if err != nil {
+		b.logger.Error(
+			"Failed to send confirmation message",
+			"error", err,
+			"channel_id", b.Channel,
+			"thread_id", b.ThreadID,
+			"user", c.Sender().Username,
+		)
+		return fmt.Errorf("error sending message: %w", err)
+	}
+
+	time.AfterFunc(5*time.Second, func() {
+		if err := b.Bot.Delete(message); err != nil {
+			b.logger.Warn(
+				"Failed to delete confirmation message",
+				"error", err,
+				"channel_id", b.Channel,
+				"message_id", message.ID,
+				"user", message.Sender.Username,
+			)
+		}
+
+		if err := c.Delete(); err != nil {
+			b.logger.Warn(
+				"Failed to delete command message",
+				"error", err,
+				"channel_id", b.Channel,
+				"message_id", c.Message().ID,
+				"user", c.Sender().Username,
+			)
+		}
+	})
+
+	return nil
 }
