@@ -73,9 +73,7 @@ func (b *Bot) handleSendToThisChannel(c telebot.Context) error {
 	message, err := c.Bot().Send(
 		c.Recipient(),
 		"✅ Successfully registered this channel for message forwarding",
-		&telebot.Topic{
-			ThreadID: b.ThreadID,
-		})
+		&telebot.Topic{ThreadID: b.ThreadID}, &telebot.SendOptions{ReplyTo: c.Message()})
 	if err != nil {
 		b.logger.Error(
 			"Failed to send confirmation message",
