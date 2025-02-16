@@ -122,11 +122,15 @@ func (n *TimestampNode) String() string {
 	case "F":
 		formatted = t.Format("Monday, January 02, 2006 3:04 PM MST")
 	case "R":
-		formatted = fmt.Sprintf("*%s* (%s)", formatRelativeTime(t), t.Format("January 02, 2006 3:04 PM MST"))
+		return formatRelativeFull(t)
 	default:
 		formatted = t.Format(time.RFC3339)
 	}
 	return escapeTelegram(formatted)
+}
+
+func formatRelativeFull(t time.Time) string {
+	return fmt.Sprintf("*%s* (%s)", formatRelativeTime(t), escapeTelegram(t.Format("January 02, 2006 3:04 PM MST")))
 }
 
 func formatRelativeTime(t time.Time) string {
