@@ -100,7 +100,7 @@ func (b *Bot) Start() error {
 		wg.Add(1)
 		go func(bot Bots) {
 			defer wg.Done()
-			bot.Logger().Info(
+			bot.Logger().Debug(
 				"Starting bot",
 				"type", fmt.Sprintf("%T", bot),
 			)
@@ -118,7 +118,7 @@ func (b *Bot) Start() error {
 				"type", fmt.Sprintf("%T", bot),
 			)
 
-			bot.Logger().Info(
+			bot.Logger().Debug(
 				"Registering commands",
 				"type", fmt.Sprintf("%T", bot),
 			)
@@ -131,7 +131,7 @@ func (b *Bot) Start() error {
 				)
 				return
 			}
-			bot.Logger().Info(
+			bot.Logger().Debug(
 				"Commands registered successfully",
 				"type", fmt.Sprintf("%T", bot),
 			)

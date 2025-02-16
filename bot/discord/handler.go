@@ -48,7 +48,7 @@ func (b *Bot) Commands() error {
 
 	for _, cmd := range commands {
 		if _, ok := isRegistered[cmd.Name]; ok {
-			b.logger.Debug(
+			b.logger.Warn(
 				"Command already registered",
 				"command", cmd.Name,
 			)

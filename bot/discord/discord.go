@@ -63,7 +63,7 @@ func (b *Bot) Start() error {
 		return fmt.Errorf("error opening connection to Discord: %w", err)
 	}
 
-	b.logger.Info(
+	b.logger.Debug(
 		"Discord connection established",
 		"channel_id", b.Channel,
 	)
