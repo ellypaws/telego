@@ -131,7 +131,7 @@ func (b *Bot) deleteMessageHandler(s *discordgo.Session, m *discordgo.MessageDel
 	reference, ok := b.Discord.Get(m.Message)
 	if !ok {
 		b.Discord.Logger().Debug(
-			"Skipping message - not tracked",
+			"Message was deleted but not tracked",
 			"message_id", m.Message.ID,
 			"channel_id", m.Message.ChannelID,
 			"author", m.Message.Author.Username,
@@ -140,7 +140,7 @@ func (b *Bot) deleteMessageHandler(s *discordgo.Session, m *discordgo.MessageDel
 	}
 
 	b.Discord.Logger().Debug(
-		"Tracked message was deleted",
+		"Message was deleted, deleting from Telegram",
 		"message_id", reference.Telegram.ID,
 		"chat_id", reference.Telegram.Chat.ID,
 	)
@@ -148,6 +148,7 @@ func (b *Bot) deleteMessageHandler(s *discordgo.Session, m *discordgo.MessageDel
 		"Tracked message was deleted",
 		"message_id", reference.Discord.ID,
 		"channel_id", reference.Discord.ChannelID,
+		"thread_id", reference.Telegram.ThreadID,
 	)
 
 	err := b.Telegram.Bot.Delete(reference.Telegram)
@@ -163,6 +164,7 @@ func (b *Bot) deleteMessageHandler(s *discordgo.Session, m *discordgo.MessageDel
 			"error", err,
 			"message_id", reference.Telegram.ID,
 			"chat_id", reference.Telegram.Chat.ID,
+			"thread_id", reference.Telegram.ThreadID,
 		)
 	} else {
 		b.Discord.Unset(m.Message)
@@ -175,6 +177,7 @@ func (b *Bot) deleteMessageHandler(s *discordgo.Session, m *discordgo.MessageDel
 			"Successfully deleted message from Telegram",
 			"message_id", reference.Telegram.ID,
 			"chat_id", reference.Telegram.Chat.ID,
+			"thread_id", reference.Telegram.ThreadID,
 		)
 	}
 }
@@ -183,7 +186,7 @@ func (b *Bot) messageUpdateHandler(s *discordgo.Session, m *discordgo.MessageUpd
 	reference, ok := b.Discord.Get(m.Message)
 	if !ok {
 		b.Discord.Logger().Debug(
-			"Skipping message - not tracked",
+			"Message was updated but not tracked",
 			"message_id", m.Message.ID,
 			"channel_id", m.Message.ChannelID,
 			"author", m.Message.Author.Username,
@@ -192,14 +195,15 @@ func (b *Bot) messageUpdateHandler(s *discordgo.Session, m *discordgo.MessageUpd
 	}
 
 	b.Discord.Logger().Debug(
-		"Tracked message was updated",
+		"Message was updated, updating in Telegram",
 		"message_id", reference.Discord.ID,
 		"channel_id", reference.Discord.ChannelID,
 	)
 	b.Telegram.Logger().Debug(
-		"Tracked message was updated",
+		"Message was updated, updating in Telegram",
 		"message_id", reference.Telegram.ID,
 		"chat_id", reference.Telegram.Chat.ID,
+		"thread_id", reference.Telegram.ThreadID,
 	)
 
 	b.Discord.Logger().Debug(
@@ -230,9 +234,9 @@ func (b *Bot) messageUpdateHandler(s *discordgo.Session, m *discordgo.MessageUpd
 		b.Telegram.Logger().Error(
 			"Failed to delete message from Telegram",
 			"error", err,
-			"message_id", m.Message.ID,
-			"channel_id", m.Message.ChannelID,
-			"author", m.Message.Author.Username,
+			"message_id", reference.Telegram.ID,
+			"chat_id", reference.Telegram.Chat.ID,
+			"thread_id", reference.Telegram.ThreadID,
 		)
 	} else {
 		b.Discord.Set(m.Message, edited)
@@ -244,9 +248,9 @@ func (b *Bot) messageUpdateHandler(s *discordgo.Session, m *discordgo.MessageUpd
 		)
 		b.Telegram.Logger().Info(
 			"Successfully edited message in Telegram",
-			"message_id", m.Message.ID,
-			"channel_id", m.Message.ChannelID,
-			"author", m.Message.Author.Username,
+			"message_id", reference.Telegram.ID,
+			"chat_id", reference.Telegram.Chat.ID,
+			"thread_id", reference.Telegram.ThreadID,
 		)
 	}
 }
