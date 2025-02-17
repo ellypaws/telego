@@ -15,17 +15,32 @@ func (b *Bot) registerMainHandler() {
 
 func (b *Bot) mainHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.Author.ID == s.State.User.ID {
-		b.Discord.Logger().Warn("Skipping message - self message")
+		b.Discord.Logger().Debug(
+			"Skipping message - self message",
+			"message_id", m.ID,
+			"channel_id", m.ChannelID,
+			"author", m.Author.Username,
+		)
 		return
 	}
 
 	if b.Discord.Channel == "" {
-		b.Discord.Logger().Warn("Skipping message - Discord channel not registered")
+		b.Discord.Logger().Warn(
+			"Skipping message - Discord channel not registered",
+			"message_id", m.ID,
+			"channel_id", m.ChannelID,
+			"author", m.Author.Username,
+		)
 		return
 	}
 
 	if b.Telegram.Channel == 0 {
-		b.Telegram.Logger().Warn("Skipping message - Telegram channel not registered")
+		b.Telegram.Logger().Warn(
+			"Skipping message - Telegram channel not registered",
+			"message_id", m.ID,
+			"channel_id", m.ChannelID,
+			"author", m.Author.Username,
+		)
 		return
 	}
 
@@ -115,8 +130,15 @@ func (b *Bot) mainHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 func (b *Bot) deleteMessageHandler(s *discordgo.Session, m *discordgo.MessageDelete) {
 	reference, ok := b.Discord.Get(m.Message)
 	if !ok {
+		b.Discord.Logger().Debug(
+			"Skipping message - not tracked",
+			"message_id", m.Message.ID,
+			"channel_id", m.Message.ChannelID,
+			"author", m.Message.Author.Username,
+		)
 		return
 	}
+
 	b.Discord.Logger().Debug(
 		"Tracked message was deleted",
 		"message_id", reference.Telegram.ID,
@@ -127,6 +149,7 @@ func (b *Bot) deleteMessageHandler(s *discordgo.Session, m *discordgo.MessageDel
 		"message_id", reference.Discord.ID,
 		"channel_id", reference.Discord.ChannelID,
 	)
+
 	err := b.Telegram.Bot.Delete(reference.Telegram)
 	if err != nil {
 		b.Discord.Logger().Error(
@@ -159,8 +182,15 @@ func (b *Bot) deleteMessageHandler(s *discordgo.Session, m *discordgo.MessageDel
 func (b *Bot) messageUpdateHandler(s *discordgo.Session, m *discordgo.MessageUpdate) {
 	reference, ok := b.Discord.Get(m.Message)
 	if !ok {
+		b.Discord.Logger().Debug(
+			"Skipping message - not tracked",
+			"message_id", m.Message.ID,
+			"channel_id", m.Message.ChannelID,
+			"author", m.Message.Author.Username,
+		)
 		return
 	}
+
 	b.Discord.Logger().Debug(
 		"Tracked message was updated",
 		"message_id", reference.Discord.ID,
@@ -206,5 +236,17 @@ func (b *Bot) messageUpdateHandler(s *discordgo.Session, m *discordgo.MessageUpd
 		)
 	} else {
 		b.Discord.Set(m.Message, edited)
+		b.Discord.Logger().Info(
+			"Successfully edited message in Telegram",
+			"message_id", m.Message.ID,
+			"channel_id", m.Message.ChannelID,
+			"author", m.Message.Author.Username,
+		)
+		b.Telegram.Logger().Info(
+			"Successfully edited message in Telegram",
+			"message_id", m.Message.ID,
+			"channel_id", m.Message.ChannelID,
+			"author", m.Message.Author.Username,
+		)
 	}
 }
