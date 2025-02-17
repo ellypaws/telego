@@ -1,4 +1,4 @@
-package parserv2
+package parserv5
 
 import (
 	"fmt"
@@ -9,7 +9,6 @@ import (
 
 // Parse is the entry point. It first pre-processes the text to replace Discord-specific
 // markers (timestamps, mentions) with temporary markers, builds the AST, then renders it.
-// Deprecated: Use parserv5.Parse instead.
 func Parse(s *discordgo.Session, text string) string {
 	// Preprocess: replace Discord timestamps and mentions with marker strings.
 	text = preprocess(text, s)

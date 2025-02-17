@@ -9,6 +9,7 @@ require (
 	github.com/charmbracelet/lipgloss v1.0.0
 	github.com/charmbracelet/log v0.4.0
 	github.com/delthas/discord-formatting v0.0.0-20220730152124-232054d9d66b
+	github.com/gomarkdown/markdown v0.0.0-20250207164621-7a1f277a159e
 	github.com/joho/godotenv v1.5.1
 	github.com/muesli/termenv v0.15.2
 	gopkg.in/telebot.v4 v4.0.0-beta.4

@@ -1,8 +1,11 @@
 package bot
 
 import (
+	"encoding/json"
+	"os"
+
 	"telegram-discord/bot/parser"
-	"telegram-discord/bot/parser/parserv2"
+	"telegram-discord/bot/parser/parserv5"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -66,7 +69,7 @@ func (b *Bot) registerMainHandler() {
 			"channel_id", message.ChannelID,
 			"author", message.Author.Username,
 		)
-		toSend := parser.Sendable(s, message, parserv2.Parse)
+		toSend := parser.Sendable(s, message, parserv5.Parse)
 		if toSend == nil {
 			b.Telegram.Logger().Debug(
 				"Skipping message - no content to forward",

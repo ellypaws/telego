@@ -5,20 +5,22 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"testing"
+
 	"telegram-discord/bot"
 	"telegram-discord/bot/parser"
 	"telegram-discord/bot/parser/parserv2"
 	"telegram-discord/bot/parser/parserv3"
-	"testing"
+	"telegram-discord/bot/parser/parserv5"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
 )
 
-const skipSession = true
+var useSession = os.Getenv("USE_SESSION") == "true"
 
 func init() {
-	if skipSession {
+	if !useSession {
 		return
 	}
 	if err := godotenv.Load(); err != nil {
@@ -202,6 +204,21 @@ func TestParseV2(t *testing.T) {
 			name:     "Unclosed Formatting Tokens",
 			input:    "This is _italic and *bold",
 			expected: "This is \\_italic and \\*bold",
+		},
+		{
+			name:     "Mention",
+			input:    "<@1234567890> <@!123456789>",
+			expected: "\\@1234567890 \\@123456789",
+		},
+		{
+			name:     "Channel Mention",
+			input:    "This is a channel <#1335581350731972648> testing",
+			expected: "This is a channel \\#🔔・𝙑𝙍\\-announcements testing",
+		},
+		{
+			name:     "URL",
+			input:    "This is [an example](http://www.example.com/) link.",
+			expected: "This is [an example](http://www.example.com/) link\\.",
 		},
 		{
 			name:     "Mixed Markdown with Code Block",
@@ -397,6 +414,136 @@ __underline__
 				t.Errorf("DiscordToTelegramMarkdown(%q) = %q; want %q", tt.input, got, tt.expected)
 				ast := parserv3.AST(tt.input)
 				t.Logf("AST: %v", ast)
+			}
+		})
+	}
+}
+
+// TestParseV5 tests parserv5.Parse,
+// which first converts Discord-specific constructs (like timestamps and mentions)
+// then calls the markdown parser.
+func TestParseV5(t *testing.T) {
+	var tests = []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "Unclosed Bold",
+			input:    "This is **bold text",
+			expected: "This is \\*\\*bold text",
+		},
+		{
+			name:     "Balanced Bold",
+			input:    "This is **bold text**",
+			expected: "This is *bold text*",
+		},
+		{
+			name:     "Unclosed Italic",
+			input:    "This is _italic text *italic text",
+			expected: "This is \\_italic text \\*italic text",
+		},
+		{
+			name:     "Balanced Italic",
+			input:    "This is _italic text_ *italic text*",
+			expected: "This is _italic text_ _italic text_",
+		},
+		{
+			name:     "Broken Formatting",
+			input:    "*bold _italic",
+			expected: "\\*bold \\_italic",
+		},
+		{
+			name:     "Nested Balanced Formatting",
+			input:    "**bold* _italic_**",
+			expected: "*bold\\* _italic_*",
+		},
+		{
+			name:     "Inline Code Unclosed",
+			input:    "Some `code",
+			expected: "Some \\`code",
+		},
+		{
+			name:     "Escaped Star",
+			input:    "*Escape \\*star*",
+			expected: "_Escape \\*star_",
+		},
+		{
+			name:     "Code Block Unchanged",
+			input:    "```\ncode block\n```",
+			expected: "```\ncode block\n```",
+		},
+		{
+			name:     "Strikethrough",
+			input:    "This is ~~strikethrough~~ and this is ~not~",
+			expected: "This is ~strikethrough~ and this is \\~not\\~",
+		},
+		{
+			name:     "Mixed Formatting",
+			input:    "*bold _italic ~strike",
+			expected: "\\*bold \\_italic \\~strike",
+		},
+		{
+			name:     "Unclosed Formatting Tokens",
+			input:    "This is _italic and *bold",
+			expected: "This is \\_italic and \\*bold",
+		},
+		{
+			name:     "Mention",
+			input:    "<@1234567890> <@!123456789>",
+			expected: "\\@1234567890 \\@123456789",
+		},
+		{
+			name:     "Channel Mention",
+			input:    "This is a channel <#1335581350731972648> testing",
+			expected: "This is a channel \\#🔔・𝙑𝙍\\-announcements testing",
+		},
+		{
+			name:     "URL",
+			input:    "This is [an example](http://www.example.com/) link.",
+			expected: "This is [an example](http://www.example.com/) link\\.",
+		},
+		{
+			name:     "Mixed Markdown with Code Block",
+			input:    "Here is some code: ```go \nfmt.Println(\"Hello\")\n``` and some *bold",
+			expected: "Here is some code: ```go \nfmt.Println(\"Hello\")\n``` and some \\*bold",
+		},
+		{
+			name:     "Italic underline",
+			input:    "_italic __underlined___",
+			expected: "_italic __underlined___",
+		},
+		{
+			name: "Combined example",
+			input: `**bold \*text**
+*italic \*text*
+__underline__
+~~strikethrough~~
+||spoiler||
+**bold _italic bold ~~italic bold strikethrough ||italic bold strikethrough spoiler||~~ __underline italic bold___ bold**
+[inline URL](http://www.example.com/)
+` + "`inline fixed-width code`" +
+				"```\npre-formatted fixed-width code block\n```\n" +
+				"```python\npre-formatted fixed-width code block written in the Python programming language\n```",
+			expected: `*bold \*text*
+_italic \*text_
+__underline__
+~strikethrough~
+||spoiler||
+*bold _italic bold ~italic bold strikethrough ||italic bold strikethrough spoiler||~ __underline italic bold___ bold*
+[inline URL](http://www.example.com/)
+` + "`inline fixed-width code`" +
+				"```\npre-formatted fixed-width code block\n```\n" +
+				"```python\npre-formatted fixed-width code block written in the Python programming language\n```",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := parserv5.Parse(session, tt.input)
+			if got != tt.expected {
+				t.Errorf("DiscordToTelegramMarkdown(%q) = %q; want %q", tt.input, got, tt.expected)
+				saveAsJSONFile(t, fmt.Sprintf("./bot/parser/test/debug_%s.json", tt.name), parserv2.AST(tt.input))
+				saveResult(t, fmt.Sprintf("./bot/parser/test/debug_%s.txt", tt.name), got, tt.expected)
 			}
 		})
 	}
