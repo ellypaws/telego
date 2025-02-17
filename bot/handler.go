@@ -1,9 +1,6 @@
 package bot
 
 import (
-	"encoding/json"
-	"os"
-
 	"telegram-discord/bot/parser"
 	"telegram-discord/bot/parser/parserv5"
 
