@@ -3,17 +3,26 @@ package discord
 import (
 	"fmt"
 	"io"
+	"sync"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/charmbracelet/log"
 	"github.com/muesli/termenv"
+	"gopkg.in/telebot.v4"
 )
 
 type Bot struct {
 	Session *discordgo.Session
 	Channel string
 
-	logger *log.Logger
+	logger  *log.Logger
+	tracked map[string]Tracked
+	mutex   sync.Mutex
+}
+
+type Tracked struct {
+	Discord  *discordgo.Message
+	Telegram *telebot.Message
 }
 
 func New(token string, discordChannelID string, output io.Writer) (*Bot, error) {
@@ -42,7 +51,8 @@ func New(token string, discordChannelID string, output io.Writer) (*Bot, error) 
 		Session: dg,
 		Channel: channel,
 
-		logger: logger,
+		logger:  logger,
+		tracked: make(map[string]Tracked),
 	}, nil
 }
 

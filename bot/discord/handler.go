@@ -6,6 +6,7 @@ import (
 	"telegram-discord/lib"
 
 	"github.com/bwmarrin/discordgo"
+	"gopkg.in/telebot.v4"
 )
 
 func (b *Bot) Commands() error {
@@ -85,6 +86,28 @@ func (b *Bot) Handlers() {
 			b.handleUnregister(s, i)
 		}
 	})
+}
+
+func (b *Bot) Set(discord *discordgo.Message, telegram *telebot.Message) {
+	if discord == nil || telegram == nil {
+		return
+	}
+	b.mutex.Lock()
+	b.tracked[discord.ID] = Tracked{discord, telegram}
+	b.mutex.Unlock()
+}
+
+func (b *Bot) Get(message *discordgo.Message) (Tracked, bool) {
+	b.mutex.Lock()
+	tracked, ok := b.tracked[message.ID]
+	b.mutex.Unlock()
+	return tracked, ok
+}
+
+func (b *Bot) Unset(message *discordgo.Message) {
+	b.mutex.Lock()
+	delete(b.tracked, message.ID)
+	b.mutex.Unlock()
 }
 
 func (b *Bot) handleRegister(s *discordgo.Session, i *discordgo.InteractionCreate) {
