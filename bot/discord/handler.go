@@ -119,14 +119,14 @@ func (b *Bot) handleRegister(s *discordgo.Session, i *discordgo.InteractionCreat
 			"Using specified channel for registration",
 			"channel_id", channelID,
 			"channel_name", channel.Name,
-			"user", i.Member.User.Username,
+			"user", lib.GetUsername(i),
 		)
 	} else {
 		channelID = i.ChannelID
 		b.logger.Debug(
 			"Using current channel for registration",
 			"channel_id", channelID,
-			"user", i.Member.User.Username,
+			"user", lib.GetUsername(i),
 		)
 	}
 
@@ -134,7 +134,7 @@ func (b *Bot) handleRegister(s *discordgo.Session, i *discordgo.InteractionCreat
 		b.logger.Warn(
 			"Channel already registered for message forwarding",
 			"channel_id", channelID,
-			"user", i.Member.User.Username,
+			"user", lib.GetUsername(i),
 		)
 		b.respond(s, i, "This channel is already registered for message forwarding")
 		return
@@ -146,7 +146,7 @@ func (b *Bot) handleRegister(s *discordgo.Session, i *discordgo.InteractionCreat
 			"Failed to save channel configuration",
 			"error", err,
 			"channel_id", channelID,
-			"user", i.Member.User.Username,
+			"user", lib.GetUsername(i),
 		)
 	}
 
@@ -154,7 +154,7 @@ func (b *Bot) handleRegister(s *discordgo.Session, i *discordgo.InteractionCreat
 		"Channel registered for message forwarding",
 		"channel_id", channelID,
 		"guild_id", i.GuildID,
-		"user", i.Member.User.Username,
+		"user", lib.GetUsername(i),
 	)
 
 	b.respond(s, i, fmt.Sprintf("Successfully registered channel <#%s> for message forwarding", channelID))
@@ -166,7 +166,7 @@ func (b *Bot) handleUnregister(s *discordgo.Session, i *discordgo.InteractionCre
 			"Unregister attempt for non-registered channel",
 			"channel_id", i.ChannelID,
 			"registered_channel", b.Channel,
-			"user", i.Member.User.Username,
+			"user", lib.GetUsername(i),
 		)
 		b.respond(s, i, "This channel is not currently registered for message forwarding")
 		return
@@ -180,7 +180,7 @@ func (b *Bot) handleUnregister(s *discordgo.Session, i *discordgo.InteractionCre
 			"Failed to save channel configuration",
 			"error", err,
 			"old_channel_id", oldChannel,
-			"user", i.Member.User.Username,
+			"user", lib.GetUsername(i),
 		)
 	}
 
@@ -188,7 +188,7 @@ func (b *Bot) handleUnregister(s *discordgo.Session, i *discordgo.InteractionCre
 		"Channel unregistered from message forwarding",
 		"old_channel_id", oldChannel,
 		"guild_id", i.GuildID,
-		"user", i.Member.User.Username,
+		"user", lib.GetUsername(i),
 	)
 
 	b.respond(s, i, "Successfully unregistered this channel from message forwarding")
@@ -209,7 +209,7 @@ func (b *Bot) respond(s *discordgo.Session, i *discordgo.InteractionCreate, cont
 			"interaction_id", i.ID,
 			"channel_id", i.ChannelID,
 			"content", content,
-			"user", i.Member.User.Username,
+			"user", lib.GetUsername(i),
 		)
 	}
 }
@@ -229,7 +229,7 @@ func (b *Bot) respondWithError(s *discordgo.Session, i *discordgo.InteractionCre
 			"interaction_id", i.ID,
 			"channel_id", i.ChannelID,
 			"content", content,
-			"user", i.Member.User.Username,
+			"user", lib.GetUsername(i),
 		)
 	}
 }

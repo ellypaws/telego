@@ -3,6 +3,7 @@ package bot
 import (
 	"telegram-discord/bot/parser"
 	"telegram-discord/bot/parser/parserv5"
+	"telegram-discord/lib"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -19,7 +20,7 @@ func (b *Bot) mainHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			"Skipping message - self message",
 			"message_id", m.ID,
 			"channel_id", m.ChannelID,
-			"author", getUsername(m),
+			"author", lib.GetUsername(m),
 		)
 		return
 	}
@@ -29,7 +30,7 @@ func (b *Bot) mainHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			"Skipping message - Discord channel not registered",
 			"message_id", m.ID,
 			"channel_id", m.ChannelID,
-			"author", getUsername(m),
+			"author", lib.GetUsername(m),
 		)
 		return
 	}
@@ -39,7 +40,7 @@ func (b *Bot) mainHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			"Skipping message - Telegram channel not registered",
 			"message_id", m.ID,
 			"channel_id", m.ChannelID,
-			"author", getUsername(m),
+			"author", lib.GetUsername(m),
 		)
 		return
 	}
@@ -49,7 +50,7 @@ func (b *Bot) mainHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			"Skipping message - wrong channel",
 			"received_channel", m.ChannelID,
 			"target_channel", b.Discord.Channel,
-			"author", getUsername(m),
+			"author", lib.GetUsername(m),
 		)
 		return
 	}
@@ -63,7 +64,7 @@ func (b *Bot) mainHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			"Processing message with reference",
 			"message_id", m.ID,
 			"reference_id", m.MessageReference.MessageID,
-			"author", getUsername(m),
+			"author", lib.GetUsername(m),
 		)
 
 		retrieve, err := b.Discord.Session.ChannelMessage(m.MessageReference.ChannelID, m.MessageReference.MessageID)
@@ -73,7 +74,7 @@ func (b *Bot) mainHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 				"error", err,
 				"channel_id", m.MessageReference.ChannelID,
 				"message_id", m.MessageReference.MessageID,
-				"author", getUsername(m),
+				"author", lib.GetUsername(m),
 			)
 			return
 		}
@@ -84,7 +85,7 @@ func (b *Bot) mainHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		"Processing message",
 		"message_id", message.ID,
 		"channel_id", message.ChannelID,
-		"author", getUsername(message),
+		"author", lib.GetUsername(message),
 	)
 	toSend := parser.Sendable(s, message, parserv5.Parse)
 	if toSend == nil {
@@ -92,7 +93,7 @@ func (b *Bot) mainHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			"Skipping message - no content to forward",
 			"message_id", message.ID,
 			"channel_id", message.ChannelID,
-			"author", getUsername(message),
+			"author", lib.GetUsername(message),
 		)
 		return
 	}
@@ -101,7 +102,7 @@ func (b *Bot) mainHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		"Forwarding message to Telegram",
 		"message_id", message.ID,
 		"channel_id", message.ChannelID,
-		"author", getUsername(message),
+		"author", lib.GetUsername(message),
 		"content_length", len(message.Content),
 	)
 
@@ -112,7 +113,7 @@ func (b *Bot) mainHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			"error", err,
 			"message_id", message.ID,
 			"channel_id", message.ChannelID,
-			"author", getUsername(message),
+			"author", lib.GetUsername(message),
 			"content_length", len(message.Content),
 		)
 	} else {
@@ -121,7 +122,7 @@ func (b *Bot) mainHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			"Successfully forwarded message to Telegram",
 			"message_id", message.ID,
 			"channel_id", message.ChannelID,
-			"author", getUsername(message),
+			"author", lib.GetUsername(message),
 			"content_length", len(message.Content),
 		)
 	}
@@ -134,7 +135,7 @@ func (b *Bot) deleteMessageHandler(s *discordgo.Session, m *discordgo.MessageDel
 			"Message was deleted but not tracked",
 			"message_id", m.Message.ID,
 			"channel_id", m.Message.ChannelID,
-			"author", getUsername(m.Message),
+			"author", lib.GetUsername(m.Message),
 		)
 		return
 	}
@@ -143,13 +144,13 @@ func (b *Bot) deleteMessageHandler(s *discordgo.Session, m *discordgo.MessageDel
 		"Message was deleted, deleting from Telegram",
 		"message_id", m.Message.ID,
 		"channel_id", m.Message.ChannelID,
-		"author", getUsername(m.Message),
+		"author", lib.GetUsername(m.Message),
 	)
 	b.Telegram.Logger().Debug(
 		"Tracked message was deleted",
 		"message_id", reference.Discord.ID,
 		"channel_id", reference.Discord.ChannelID,
-		"author", getUsername(reference.Discord),
+		"author", lib.GetUsername(reference.Discord),
 	)
 
 	err := b.Telegram.Bot.Delete(reference.Telegram)
@@ -159,7 +160,7 @@ func (b *Bot) deleteMessageHandler(s *discordgo.Session, m *discordgo.MessageDel
 			"error", err,
 			"message_id", reference.Discord.ID,
 			"channel_id", reference.Discord.ChannelID,
-			"author", getUsername(reference.Discord),
+			"author", lib.GetUsername(reference.Discord),
 		)
 		b.Telegram.Logger().Error(
 			"Failed to delete message from Telegram",
@@ -174,7 +175,7 @@ func (b *Bot) deleteMessageHandler(s *discordgo.Session, m *discordgo.MessageDel
 			"Successfully deleted message from Telegram",
 			"message_id", reference.Discord.ID,
 			"channel_id", reference.Discord.ChannelID,
-			"author", getUsername(reference.Discord),
+			"author", lib.GetUsername(reference.Discord),
 		)
 		b.Telegram.Logger().Info(
 			"Successfully deleted message from Telegram",
@@ -192,7 +193,7 @@ func (b *Bot) messageUpdateHandler(s *discordgo.Session, m *discordgo.MessageUpd
 			"Message was updated but not tracked",
 			"message_id", m.Message.ID,
 			"channel_id", m.Message.ChannelID,
-			"author", getUsername(m.Message),
+			"author", lib.GetUsername(m.Message),
 		)
 		return
 	}
@@ -201,7 +202,7 @@ func (b *Bot) messageUpdateHandler(s *discordgo.Session, m *discordgo.MessageUpd
 		"Message was updated, updating in Telegram",
 		"message_id", reference.Discord.ID,
 		"channel_id", reference.Discord.ChannelID,
-		"author", getUsername(reference.Discord),
+		"author", lib.GetUsername(reference.Discord),
 	)
 	b.Telegram.Logger().Debug(
 		"Message was updated, updating in Telegram",
@@ -214,7 +215,7 @@ func (b *Bot) messageUpdateHandler(s *discordgo.Session, m *discordgo.MessageUpd
 		"Processing message",
 		"message_id", m.ID,
 		"channel_id", m.ChannelID,
-		"author", getUsername(m),
+		"author", lib.GetUsername(m),
 	)
 	toSend := parser.Sendable(s, m.Message, parserv5.Parse)
 	if toSend == nil {
@@ -222,7 +223,7 @@ func (b *Bot) messageUpdateHandler(s *discordgo.Session, m *discordgo.MessageUpd
 			"Skipping message - no content to edit",
 			"message_id", m.Message.ID,
 			"channel_id", m.Message.ChannelID,
-			"author", getUsername(m),
+			"author", lib.GetUsername(m),
 		)
 		return
 	}
@@ -233,7 +234,7 @@ func (b *Bot) messageUpdateHandler(s *discordgo.Session, m *discordgo.MessageUpd
 			"error", err,
 			"message_id", m.Message.ID,
 			"channel_id", m.Message.ChannelID,
-			"author", getUsername(m),
+			"author", lib.GetUsername(m),
 		)
 		b.Telegram.Logger().Error(
 			"Failed to delete message from Telegram",
@@ -248,7 +249,7 @@ func (b *Bot) messageUpdateHandler(s *discordgo.Session, m *discordgo.MessageUpd
 			"Successfully edited message in Telegram",
 			"message_id", m.Message.ID,
 			"channel_id", m.Message.ChannelID,
-			"author", getUsername(m),
+			"author", lib.GetUsername(m),
 		)
 		b.Telegram.Logger().Info(
 			"Successfully edited message in Telegram",
@@ -257,36 +258,4 @@ func (b *Bot) messageUpdateHandler(s *discordgo.Session, m *discordgo.MessageUpd
 			"thread_id", reference.Telegram.ThreadID,
 		)
 	}
-}
-
-func getUsername(entities ...any) string {
-	for _, entity := range entities {
-		if entity == nil {
-			continue
-		}
-		switch e := entity.(type) {
-		case *discordgo.User:
-			return e.Username
-		case *discordgo.Member:
-			return e.User.Username
-		case *discordgo.Message:
-			return getUsername(e.Author, e.Member)
-		case *discordgo.MessageUpdate:
-			return getUsername(e.Message, e.BeforeUpdate)
-		case *discordgo.MessageDelete:
-			return getUsername(e.Message, e.BeforeDelete)
-		default:
-			return "unknown"
-		}
-	}
-	return "unknown"
-}
-
-func or[T any](item ...*T) *T {
-	for _, i := range item {
-		if i != nil {
-			return i
-		}
-	}
-	return nil
 }
