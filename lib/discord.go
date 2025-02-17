@@ -18,6 +18,8 @@ func GetUsername(entities ...any) string {
 			return e.User.Username
 		case *discordgo.Message:
 			return GetUsername(e.Author, e.Member)
+		case *discordgo.MessageCreate:
+			return GetUsername(e.Message)
 		case *discordgo.MessageUpdate:
 			return GetUsername(e.Message, e.BeforeUpdate)
 		case *discordgo.MessageDelete:
