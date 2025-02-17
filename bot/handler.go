@@ -74,7 +74,7 @@ func (b *Bot) mainHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 				"error", err,
 				"channel_id", m.MessageReference.ChannelID,
 				"message_id", m.MessageReference.MessageID,
-				"author", lib.GetUsername(m),
+				"author", lib.GetUsername(m.MessageReference),
 			)
 			return
 		}
