@@ -211,31 +211,33 @@ func isEscaped(text string, pos int) bool {
 	return count%2 == 1
 }
 
-func buildAST(text string) []Node {
-	// helper to find a non-escaped closing token starting at position start.
-	findClosing := func(text string, start int, token string) int {
-		for j := start; j < len(text); j++ {
-			if strings.HasPrefix(text[j:], token) && !isEscaped(text, j) {
-				return j
-			}
+func findClosing(text string, start int, token string) int {
+	for j := start; j < len(text); j++ {
+		if strings.HasPrefix(text[j:], token) && !isEscaped(text, j) {
+			return j
 		}
-		return -1
 	}
+	return -1
+}
 
-	var nodes []Node
-	i := 0
+func buildAST(input string) []Node {
+	var (
+		text  = []rune(input)
+		nodes []Node
+		i     = 0
+	)
 	for i < len(text) {
 		// Check for escaped tokens.
 		if text[i] == '\\' && i+1 < len(text) {
-			nodes = append(nodes, &TextNode{Text: text[i : i+2], Raw: true})
+			nodes = append(nodes, &TextNode{Text: string(text[i : i+2]), Raw: true})
 			i += 2
 			continue
 		}
 		// (Timestamp, mention, channel, inline code, code block, and link handling remain unchanged.)
-		if strings.HasPrefix(text[i:], "[[TIMESTAMP:") {
-			end := strings.Index(text[i:], "]]")
+		if strings.HasPrefix(string(text[i:]), "[[TIMESTAMP:") {
+			end := strings.Index(string(text[i:]), "]]")
 			if end != -1 {
-				marker := text[i : i+end+2]
+				marker := string(text[i : i+end+2])
 				parts := strings.Split(strings.Trim(marker, "[]"), ":")
 				if len(parts) == 3 {
 					ts, err := strconv.ParseInt(parts[1], 10, 64)
@@ -247,52 +249,52 @@ func buildAST(text string) []Node {
 				}
 			}
 		}
-		if strings.HasPrefix(text[i:], "[[MENTION:") {
-			end := strings.Index(text[i:], "]]")
+		if strings.HasPrefix(string(text[i:]), "[[MENTION:") {
+			end := strings.Index(string(text[i:]), "]]")
 			if end != -1 {
-				marker := text[i : i+end+2]
+				marker := string(text[i : i+end+2])
 				content := strings.TrimPrefix(strings.TrimSuffix(marker, "]]"), "[[MENTION:")
 				nodes = append(nodes, &MentionNode{Text: content})
 				i += end + 2
 				continue
 			}
 		}
-		if strings.HasPrefix(text[i:], "[[CHANNEL:") {
-			end := strings.Index(text[i:], "]]")
+		if strings.HasPrefix(string(text[i:]), "[[CHANNEL:") {
+			end := strings.Index(string(text[i:]), "]]")
 			if end != -1 {
 				marker := text[i : i+end+2]
-				content := strings.TrimPrefix(strings.TrimSuffix(marker, "]]"), "[[CHANNEL:")
+				content := strings.TrimPrefix(strings.TrimSuffix(string(marker), "]]"), "[[CHANNEL:")
 				nodes = append(nodes, &MentionNode{Text: content})
 				i += end + 2
 				continue
 			}
 		}
 		if text[i] == '`' {
-			end := strings.Index(text[i+1:], "`")
+			end := strings.Index(string(text[i+1:]), "`")
 			if end != -1 {
-				code := text[i+1 : i+1+end]
+				code := string(text[i+1 : i+1+end])
 				nodes = append(nodes, &CodeNode{Text: code})
 				i += end + 2
 				continue
 			}
 		}
-		if strings.HasPrefix(text[i:], "```") {
+		if strings.HasPrefix(string(text[i:]), "```") {
 			j := i + 3
-			end := strings.Index(text[j:], "```")
+			end := strings.Index(string(text[j:]), "```")
 			if end != -1 {
-				code := text[j : j+end]
+				code := string(text[j : j+end])
 				nodes = append(nodes, &CodeBlockNode{Text: code})
 				i = j + end + 3
 				continue
 			}
 		}
 		if text[i] == '[' {
-			closeBracket := strings.Index(text[i:], "]")
+			closeBracket := strings.Index(string(text[i:]), "]")
 			if closeBracket != -1 && len(text) > i+closeBracket+1 && text[i+closeBracket+1] == '(' {
-				closeParen := strings.Index(text[i+closeBracket+2:], ")")
+				closeParen := strings.Index(string(text[i+closeBracket+2:]), ")")
 				if closeParen != -1 {
-					linkText := text[i+1 : i+closeBracket]
-					linkURL := text[i+closeBracket+2 : i+closeBracket+2+closeParen]
+					linkText := string(text[i+1 : i+closeBracket])
+					linkURL := string(text[i+closeBracket+2 : i+closeBracket+2+closeParen])
 					nodes = append(nodes, &LinkNode{Text: linkText, URL: linkURL})
 					i += closeBracket + closeParen + 3
 					continue
@@ -301,16 +303,16 @@ func buildAST(text string) []Node {
 		}
 		// Multi-character formatting tokens: **, __, ||, ~~
 		if i <= len(text)-2 {
-			tok := text[i : i+2]
+			tok := string(text[i : i+2])
 			if tok == "**" || tok == "__" || tok == "||" || tok == "~~" {
-				closing := findClosing(text, i+2, tok)
+				closing := findClosing(string(text), i+2, tok)
 				if closing == -1 {
 					nodes = append(nodes, &TextNode{Text: tok})
 					i += 2
 					continue
 				}
 				innerContent := text[i+2 : closing]
-				children := buildAST(innerContent)
+				children := buildAST(string(innerContent))
 				nodes = append(nodes, &FormattingNode{Format: tok, Children: children})
 				i = closing + 2
 				continue
@@ -319,14 +321,14 @@ func buildAST(text string) []Node {
 		// Single-character formatting tokens: * and _
 		if text[i] == '*' || text[i] == '_' {
 			tok := string(text[i])
-			closing := findClosing(text, i+1, tok)
+			closing := findClosing(string(text), i+1, tok)
 			if closing == -1 {
 				nodes = append(nodes, &TextNode{Text: tok})
 				i++
 				continue
 			}
 			innerContent := text[i+1 : closing]
-			children := buildAST(innerContent)
+			children := buildAST(string(innerContent))
 			nodes = append(nodes, &FormattingNode{Format: tok, Children: children})
 			i = closing + 1
 			continue
