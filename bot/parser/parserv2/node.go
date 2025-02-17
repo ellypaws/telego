@@ -60,10 +60,7 @@ type CodeNode struct {
 }
 
 func (n *CodeNode) String() string {
-	// Inside inline code, escape '`' and '\' per Telegram MarkdownV2.
-	text := strings.ReplaceAll(n.Text, "\\", "\\\\")
-	text = strings.ReplaceAll(text, "`", "\\`")
-	return "`" + text + "`"
+	return "`" + safeEscapeTelegram(n.Text) + "`"
 }
 
 // CodeBlockNode represents a code block.
@@ -235,68 +232,68 @@ func buildAST(input string) []Node {
 		}
 		// (Timestamp, mention, channel, inline code, code block, and link handling remain unchanged.)
 		if strings.HasPrefix(string(text[i:]), "[[TIMESTAMP:") {
-			end := strings.Index(string(text[i:]), "]]")
+			end := findClosing(string(text), i+12, "]]")
 			if end != -1 {
-				marker := string(text[i : i+end+2])
+				marker := string(text[i : end+2])
 				parts := strings.Split(strings.Trim(marker, "[]"), ":")
 				if len(parts) == 3 {
 					ts, err := strconv.ParseInt(parts[1], 10, 64)
 					if err == nil {
 						nodes = append(nodes, &TimestampNode{Timestamp: ts, Style: parts[2]})
-						i += end + 2
+						i = end + 2
 						continue
 					}
 				}
 			}
 		}
 		if strings.HasPrefix(string(text[i:]), "[[MENTION:") {
-			end := strings.Index(string(text[i:]), "]]")
+			end := findClosing(string(text), i+10, "]]")
 			if end != -1 {
-				marker := string(text[i : i+end+2])
+				marker := string(text[i : end+2])
 				content := strings.TrimPrefix(strings.TrimSuffix(marker, "]]"), "[[MENTION:")
 				nodes = append(nodes, &MentionNode{Text: content})
-				i += end + 2
+				i = end + 2
 				continue
 			}
 		}
 		if strings.HasPrefix(string(text[i:]), "[[CHANNEL:") {
-			end := strings.Index(string(text[i:]), "]]")
+			end := findClosing(string(text), i+10, "]]")
 			if end != -1 {
-				marker := text[i : i+end+2]
-				content := strings.TrimPrefix(strings.TrimSuffix(string(marker), "]]"), "[[CHANNEL:")
+				marker := string(text[i : end+2])
+				content := strings.TrimPrefix(strings.TrimSuffix(marker, "]]"), "[[CHANNEL:")
 				nodes = append(nodes, &MentionNode{Text: content})
-				i += end + 2
-				continue
-			}
-		}
-		if text[i] == '`' {
-			end := strings.Index(string(text[i+1:]), "`")
-			if end != -1 {
-				code := string(text[i+1 : i+1+end])
-				nodes = append(nodes, &CodeNode{Text: code})
-				i += end + 2
+				i = end + 2
 				continue
 			}
 		}
 		if strings.HasPrefix(string(text[i:]), "```") {
 			j := i + 3
-			end := strings.Index(string(text[j:]), "```")
+			end := findClosing(string(text), j, "```")
 			if end != -1 {
-				code := string(text[j : j+end])
+				code := string(text[j:end])
 				nodes = append(nodes, &CodeBlockNode{Text: code})
-				i = j + end + 3
+				i = end + 3
+				continue
+			}
+		}
+		if text[i] == '`' {
+			end := findClosing(string(text), i+1, "`")
+			if end != -1 {
+				code := string(text[i+1 : end])
+				nodes = append(nodes, &CodeNode{Text: code})
+				i = end + 2
 				continue
 			}
 		}
 		if text[i] == '[' {
-			closeBracket := strings.Index(string(text[i:]), "]")
-			if closeBracket != -1 && len(text) > i+closeBracket+1 && text[i+closeBracket+1] == '(' {
-				closeParen := strings.Index(string(text[i+closeBracket+2:]), ")")
+			closeBracket := findClosing(string(text), i+1, "]")
+			if closeBracket != -1 && len(text) > closeBracket+1 && text[closeBracket+1] == '(' {
+				closeParen := findClosing(string(text), closeBracket+2, ")")
 				if closeParen != -1 {
-					linkText := string(text[i+1 : i+closeBracket])
-					linkURL := string(text[i+closeBracket+2 : i+closeBracket+2+closeParen])
+					linkText := string(text[i+1 : closeBracket])
+					linkURL := string(text[closeBracket+2 : closeParen])
 					nodes = append(nodes, &LinkNode{Text: linkText, URL: linkURL})
-					i += closeBracket + closeParen + 3
+					i = closeParen + 1
 					continue
 				}
 			}
@@ -311,8 +308,8 @@ func buildAST(input string) []Node {
 					i += 2
 					continue
 				}
-				innerContent := text[i+2 : closing]
-				children := buildAST(string(innerContent))
+				innerContent := string(text[i+2 : closing])
+				children := buildAST(innerContent)
 				nodes = append(nodes, &FormattingNode{Format: tok, Children: children})
 				i = closing + 2
 				continue
@@ -327,8 +324,8 @@ func buildAST(input string) []Node {
 				i++
 				continue
 			}
-			innerContent := text[i+1 : closing]
-			children := buildAST(string(innerContent))
+			innerContent := string(text[i+1 : closing])
+			children := buildAST(innerContent)
 			nodes = append(nodes, &FormattingNode{Format: tok, Children: children})
 			i = closing + 1
 			continue
