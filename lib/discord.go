@@ -1,10 +1,14 @@
 package lib
 
-import "github.com/bwmarrin/discordgo"
+import (
+	"reflect"
+
+	"github.com/bwmarrin/discordgo"
+)
 
 func GetUsername(entities ...any) string {
 	for _, entity := range entities {
-		if entity == nil {
+		if reflect.ValueOf(entity).IsNil() {
 			continue
 		}
 		switch e := entity.(type) {
