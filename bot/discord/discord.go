@@ -1,9 +1,12 @@
 package discord
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"sync"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/charmbracelet/log"
@@ -21,8 +24,10 @@ type Bot struct {
 }
 
 type Tracked struct {
-	Discord  *discordgo.Message
-	Telegram *telebot.Message
+	Discord  *discordgo.Message `json:"discord,omitempty"`
+	Telegram *telebot.Message   `json:"telegram,omitempty"`
+
+	Expiry time.Time `json:"expiry"`
 }
 
 func New(token string, discordChannelID string, output io.Writer) (*Bot, error) {
@@ -72,15 +77,75 @@ func (b *Bot) Start() error {
 	if err != nil {
 		return fmt.Errorf("error opening connection to Discord: %w", err)
 	}
-
 	b.logger.Debug(
 		"Discord connection established",
 		"channel_id", b.Channel,
 	)
+
+	err = b.load(err)
+	if err != nil {
+		b.logger.Error("Error loading tracked messages", "error", err)
+		return err
+	}
+
 	return nil
 }
 
 func (b *Bot) Stop() error {
+	err := b.save()
+	if err != nil {
+		return err
+	}
+
 	b.logger.Info("Closing Discord connection")
 	return b.Session.Close()
+}
+
+func (b *Bot) load(err error) error {
+	b.logger.Debug("Loading tracked messages")
+	f, err := os.Open("tracked.json")
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return fmt.Errorf("error opening tracked messages file: %w", err)
+		}
+		b.logger.Warn("No tracked messages found")
+	} else {
+		defer f.Close()
+		dec := json.NewDecoder(f)
+		if err := dec.Decode(&b.tracked); err != nil {
+			return fmt.Errorf("error decoding tracked messages: %w", err)
+		}
+		b.Clean()
+		b.logger.Info(
+			"Tracked messages loaded",
+			"count", len(b.tracked),
+		)
+	}
+	return nil
+}
+
+func (b *Bot) save() error {
+	b.logger.Info(
+		"Saving tracked messages",
+		"count", len(b.tracked),
+	)
+	f, err := os.Create("tracked.json")
+	if err != nil {
+		return fmt.Errorf("error creating tracked messages file: %w", err)
+	}
+	defer f.Close()
+	enc := json.NewEncoder(f)
+	enc.SetIndent("", "  ")
+
+	b.Clean()
+	b.mutex.Lock()
+	defer b.mutex.Unlock()
+	if err := enc.Encode(b.tracked); err != nil {
+		return fmt.Errorf("error encoding tracked messages: %w", err)
+	}
+	b.logger.Info(
+		"Tracked messages saved",
+		"count", len(b.tracked),
+	)
+	return nil
 }

@@ -2,6 +2,7 @@ package discord
 
 import (
 	"fmt"
+	"time"
 
 	"telegram-discord/lib"
 
@@ -93,7 +94,7 @@ func (b *Bot) Set(discord *discordgo.Message, telegram *telebot.Message) {
 		return
 	}
 	b.mutex.Lock()
-	b.tracked[discord.ID] = Tracked{discord, telegram}
+	b.tracked[discord.ID] = Tracked{discord, telegram, time.Now().UTC().Add(48 * time.Hour)}
 	b.mutex.Unlock()
 }
 
@@ -108,6 +109,24 @@ func (b *Bot) Unset(message *discordgo.Message) {
 	b.mutex.Lock()
 	delete(b.tracked, message.ID)
 	b.mutex.Unlock()
+}
+
+func (b *Bot) Clean() {
+	b.mutex.Lock()
+	for id, t := range b.tracked {
+		if t.Expired() {
+			b.logger.Warn(
+				"Tracked message expired",
+				"id", id,
+			)
+			delete(b.tracked, id)
+		}
+	}
+	b.mutex.Unlock()
+}
+
+func (t *Tracked) Expired() bool {
+	return time.Now().UTC().After(t.Expiry)
 }
 
 func (b *Bot) handleRegister(s *discordgo.Session, i *discordgo.InteractionCreate) {
