@@ -42,8 +42,10 @@ func parseTimestampsToString(text string) string {
 	})
 }
 
-// Replace Discord mentions with markers.
-var userRe = regexp.MustCompile(`<@!?(?P<ID>\d+)>`)
+var (
+	userRe    = regexp.MustCompile(`<@!?(?P<ID>\d+)>`)
+	channelRe = regexp.MustCompile(`<#(?P<ID>\d+)>`)
+)
 
 func replaceMentionsToString(s *discordgo.Session, text string) string {
 	// User mentions.
@@ -62,7 +64,6 @@ func replaceMentionsToString(s *discordgo.Session, text string) string {
 		return fmt.Sprintf("[[MENTION:@%s]]", user.Username)
 	})
 	// Channel mentions.
-	var channelRe = regexp.MustCompile(`<#(?P<ID>\d+)>`)
 	text = channelRe.ReplaceAllStringFunc(text, func(match string) string {
 		matches := channelRe.FindStringSubmatch(match)
 		if len(matches) < 2 {
