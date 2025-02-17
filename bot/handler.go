@@ -64,7 +64,7 @@ func (b *Bot) mainHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			"Processing message with reference",
 			"message_id", m.ID,
 			"reference_id", m.MessageReference.MessageID,
-			"author", lib.GetUsername(m),
+			"author", lib.GetUsername(m.MessageReference),
 		)
 
 		retrieve, err := b.Discord.Session.ChannelMessage(m.MessageReference.ChannelID, m.MessageReference.MessageID)
@@ -135,7 +135,7 @@ func (b *Bot) deleteMessageHandler(s *discordgo.Session, m *discordgo.MessageDel
 			"Message was deleted but not tracked",
 			"message_id", m.Message.ID,
 			"channel_id", m.Message.ChannelID,
-			"author", lib.GetUsername(m.Message),
+			"author", lib.GetUsername(m),
 		)
 		return
 	}
