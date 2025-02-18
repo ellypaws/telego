@@ -1,9 +1,9 @@
 package bot
 
 import (
-	"telegram-discord/bot/parser"
-	"telegram-discord/bot/parser/parserv5"
 	"telegram-discord/lib"
+	"telegram-discord/lib/parser"
+	"telegram-discord/lib/parser/parserv5"
 
 	"github.com/bwmarrin/discordgo"
 )

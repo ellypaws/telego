@@ -8,10 +8,10 @@ import (
 	"testing"
 
 	"telegram-discord/bot"
-	"telegram-discord/bot/parser"
-	"telegram-discord/bot/parser/parserv2"
-	"telegram-discord/bot/parser/parserv3"
-	"telegram-discord/bot/parser/parserv5"
+	"telegram-discord/lib/parser"
+	"telegram-discord/lib/parser/parserv2"
+	"telegram-discord/lib/parser/parserv3"
+	"telegram-discord/lib/parser/parserv5"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
