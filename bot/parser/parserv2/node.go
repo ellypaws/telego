@@ -336,12 +336,3 @@ func buildAST(input string) []Node {
 	}
 	return nodes
 }
-
-// renderNodes concatenates the rendered output of all AST nodes.
-func renderNodes(nodes []Node) string {
-	var sb strings.Builder
-	for _, n := range nodes {
-		sb.WriteString(n.String())
-	}
-	return sb.String()
-}

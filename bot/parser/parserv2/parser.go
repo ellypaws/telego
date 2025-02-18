@@ -3,6 +3,7 @@ package parserv2
 import (
 	"fmt"
 	"regexp"
+	"strings"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -22,6 +23,15 @@ func Parse(s *discordgo.Session, text string) string {
 func AST(text string) []Node {
 	text = preprocess(text, nil)
 	return buildAST(text)
+}
+
+// renderNodes concatenates the rendered output of all AST nodes.
+func renderNodes(nodes []Node) string {
+	var sb strings.Builder
+	for _, n := range nodes {
+		sb.WriteString(n.String())
+	}
+	return sb.String()
 }
 
 // preprocess converts tokens like <t:...> and <@...> into unique markers.

@@ -3,6 +3,7 @@ package parserv5
 import (
 	"fmt"
 	"regexp"
+	"strings"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -15,12 +16,22 @@ func Parse(s *discordgo.Session, text string) string {
 	// Build AST from the resulting text.
 	nodes := buildAST(text)
 	// Render AST back into a Telegram MarkdownV2 string.
-	return renderNodes(nodes)
+	return renderNodes(nodes, len(text))
 }
 
 func AST(text string) []Node {
 	text = preprocess(text, nil)
 	return buildAST(text)
+}
+
+// renderNodes concatenates the rendered output of all AST nodes.
+func renderNodes(nodes []Node, length int) string {
+	var sb strings.Builder
+	sb.Grow(length)
+	for _, n := range nodes {
+		sb.WriteString(n.String())
+	}
+	return sb.String()
 }
 
 // preprocess converts tokens like <t:...> and <@...> into unique markers.
