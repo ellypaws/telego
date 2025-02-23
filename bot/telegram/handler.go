@@ -80,8 +80,8 @@ func (b *Bot) handleSendToThisChannel(c telebot.Context) error {
 	}
 
 	if err := lib.SetWithLog(b.logger, map[string]string{
-		"TELEGRAM_CHANNEL_ID": fmt.Sprintf("%d", b.Channel),
-		"TELEGRAM_THREAD_ID":  fmt.Sprintf("%d", b.ThreadID),
+		lib.EnvTelegramChannel: fmt.Sprintf("%d", b.Channel),
+		lib.EnvTelegramThread:  fmt.Sprintf("%d", b.ThreadID),
 	}); err != nil {
 		b.logger.Error(
 			"Failed to save channel configuration",
@@ -110,8 +110,8 @@ func (b *Bot) handleUnsubscribe(c telebot.Context) error {
 	}
 
 	if err := lib.SetWithLog(b.logger, map[string]string{
-		"TELEGRAM_CHANNEL_ID": "",
-		"TELEGRAM_THREAD_ID":  "",
+		lib.EnvTelegramChannel: "",
+		lib.EnvTelegramThread:  "",
 	}); err != nil {
 		b.logger.Error(
 			"Failed to save channel configuration",

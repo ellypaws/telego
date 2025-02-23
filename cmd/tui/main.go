@@ -1,14 +1,16 @@
 package main
 
 import (
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/joho/godotenv"
 	"log"
 	"os"
+
 	"telegram-discord/bot"
 	"telegram-discord/lib"
 	"telegram-discord/tui"
 	"telegram-discord/tui/components/logger"
+
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/joho/godotenv"
 )
 
 const (
@@ -32,13 +34,13 @@ func main() {
 	defer closer()
 
 	b, err := bot.New(bot.Config{
-		DiscordToken:     os.Getenv("DISCORD_TOKEN"),
-		DiscordChannelID: os.Getenv("DISCORD_CHANNEL_ID"),
+		DiscordToken:     os.Getenv(lib.EnvDiscordToken),
+		DiscordChannelID: os.Getenv(lib.EnvDiscordChannel),
 		DiscordLogger:    writers[0],
 
-		TelegramToken:     os.Getenv("TELEGRAM_TOKEN"),
-		TelegramChannelID: os.Getenv("TELEGRAM_CHANNEL_ID"),
-		TelegramThreadID:  os.Getenv("TELEGRAM_THREAD_ID"),
+		TelegramToken:     os.Getenv(lib.EnvTelegramToken),
+		TelegramChannelID: os.Getenv(lib.EnvTelegramChannel),
+		TelegramThreadID:  os.Getenv(lib.EnvTelegramThread),
 		TelegramLogger:    writers[1],
 	})
 	if err != nil {

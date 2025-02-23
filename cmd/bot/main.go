@@ -20,11 +20,11 @@ func main() {
 	defer lib.LogOutput(os.Stdout)()
 
 	b, err := bot.New(bot.Config{
-		DiscordToken:      os.Getenv("DISCORD_TOKEN"),
-		DiscordChannelID:  os.Getenv("DISCORD_CHANNEL_ID"),
-		TelegramToken:     os.Getenv("TELEGRAM_TOKEN"),
-		TelegramChannelID: os.Getenv("TELEGRAM_CHANNEL_ID"),
-		TelegramThreadID:  os.Getenv("TELEGRAM_THREAD_ID"),
+		DiscordToken:      os.Getenv(lib.EnvDiscordToken),
+		DiscordChannelID:  os.Getenv(lib.EnvDiscordChannel),
+		TelegramToken:     os.Getenv(lib.EnvTelegramToken),
+		TelegramChannelID: os.Getenv(lib.EnvTelegramChannel),
+		TelegramThreadID:  os.Getenv(lib.EnvTelegramThread),
 	})
 	if err != nil {
 		log.Fatalf("error creating bot: %v", err)

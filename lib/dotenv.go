@@ -5,6 +5,14 @@ import (
 	"github.com/joho/godotenv"
 )
 
+const (
+	EnvDiscordChannel  = "DISCORD_CHANNEL_ID"
+	EnvDiscordToken    = "DISCORD_TOKEN"
+	EnvTelegramChannel = "TELEGRAM_CHANNEL_ID"
+	EnvTelegramThread  = "TELEGRAM_THREAD_ID"
+	EnvTelegramToken   = "TELEGRAM_TOKEN"
+)
+
 func Set(key string, value string) error {
 	envs, err := godotenv.Read()
 	if err != nil {

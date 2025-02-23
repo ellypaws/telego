@@ -160,7 +160,7 @@ func (b *Bot) handleRegister(s *discordgo.Session, i *discordgo.InteractionCreat
 	}
 	b.Channel = channelID
 
-	if err := lib.Set("DISCORD_CHANNEL_ID", channelID); err != nil {
+	if err := lib.Set(lib.EnvDiscordChannel, channelID); err != nil {
 		b.logger.Error(
 			"Failed to save channel configuration",
 			"error", err,
@@ -194,7 +194,7 @@ func (b *Bot) handleUnregister(s *discordgo.Session, i *discordgo.InteractionCre
 	oldChannel := b.Channel
 	b.Channel = ""
 
-	if err := lib.Set("DISCORD_CHANNEL_ID", ""); err != nil {
+	if err := lib.Set(lib.EnvDiscordChannel, ""); err != nil {
 		b.logger.Error(
 			"Failed to save channel configuration",
 			"error", err,
