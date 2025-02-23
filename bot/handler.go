@@ -6,7 +6,6 @@ import (
 	"telegram-discord/lib/parser/parserv5"
 
 	"github.com/bwmarrin/discordgo"
-	"gopkg.in/telebot.v4"
 )
 
 func (b *Bot) registerMainHandler() {
@@ -147,14 +146,8 @@ func (b *Bot) deleteMessageHandler(s *discordgo.Session, m *discordgo.MessageDel
 		"channel_id", m.Message.ChannelID,
 		"author", lib.GetUsername(m.Message),
 	)
-	b.Telegram.Logger().Debug(
-		"Tracked message was deleted",
-		"message_id", reference.Discord.ID,
-		"channel_id", reference.Discord.ChannelID,
-		"author", lib.GetUsername(reference.Discord),
-	)
 
-	err := b.Telegram.Bot.Delete(reference.Telegram)
+	err := b.Telegram.Delete(reference.Telegram)
 	if err != nil {
 		b.Discord.Logger().Error(
 			"Failed to delete message from Telegram",
@@ -163,13 +156,6 @@ func (b *Bot) deleteMessageHandler(s *discordgo.Session, m *discordgo.MessageDel
 			"channel_id", reference.Discord.ChannelID,
 			"author", lib.GetUsername(reference.Discord),
 		)
-		b.Telegram.Logger().Error(
-			"Failed to delete message from Telegram",
-			"error", err,
-			"message_id", reference.Telegram.ID,
-			"chat_id", reference.Telegram.Chat.ID,
-			"thread_id", reference.Telegram.ThreadID,
-		)
 	} else {
 		b.Discord.Unset(m.Message)
 		b.Discord.Logger().Info(
@@ -177,12 +163,6 @@ func (b *Bot) deleteMessageHandler(s *discordgo.Session, m *discordgo.MessageDel
 			"message_id", reference.Discord.ID,
 			"channel_id", reference.Discord.ChannelID,
 			"author", lib.GetUsername(reference.Discord),
-		)
-		b.Telegram.Logger().Info(
-			"Successfully deleted message from Telegram",
-			"message_id", reference.Telegram.ID,
-			"chat_id", reference.Telegram.Chat.ID,
-			"thread_id", reference.Telegram.ThreadID,
 		)
 	}
 }
@@ -205,12 +185,6 @@ func (b *Bot) messageUpdateHandler(s *discordgo.Session, m *discordgo.MessageUpd
 		"channel_id", reference.Discord.ChannelID,
 		"author", lib.GetUsername(reference.Discord),
 	)
-	b.Telegram.Logger().Debug(
-		"Message was updated, updating in Telegram",
-		"message_id", reference.Telegram.ID,
-		"chat_id", reference.Telegram.Chat.ID,
-		"thread_id", reference.Telegram.ThreadID,
-	)
 
 	b.Discord.Logger().Debug(
 		"Processing message",
@@ -228,24 +202,14 @@ func (b *Bot) messageUpdateHandler(s *discordgo.Session, m *discordgo.MessageUpd
 		)
 		return
 	}
-	edited, err := b.Telegram.Bot.Edit(reference.Telegram, toSend, &telebot.SendOptions{
-		ParseMode: telebot.ModeMarkdownV2,
-		ThreadID:  reference.Telegram.ThreadID,
-	})
+	edited, err := b.Telegram.Edit(reference.Telegram, toSend)
 	if err != nil {
 		b.Discord.Logger().Error(
-			"Failed to delete message from Telegram",
+			"Failed to edit message in Telegram",
 			"error", err,
 			"message_id", m.Message.ID,
 			"channel_id", m.Message.ChannelID,
 			"author", lib.GetUsername(m),
-		)
-		b.Telegram.Logger().Error(
-			"Failed to delete message from Telegram",
-			"error", err,
-			"message_id", reference.Telegram.ID,
-			"chat_id", reference.Telegram.Chat.ID,
-			"thread_id", reference.Telegram.ThreadID,
 		)
 	} else {
 		b.Discord.Set(m.Message, edited)
@@ -254,12 +218,6 @@ func (b *Bot) messageUpdateHandler(s *discordgo.Session, m *discordgo.MessageUpd
 			"message_id", m.Message.ID,
 			"channel_id", m.Message.ChannelID,
 			"author", lib.GetUsername(m),
-		)
-		b.Telegram.Logger().Info(
-			"Successfully edited message in Telegram",
-			"message_id", reference.Telegram.ID,
-			"chat_id", reference.Telegram.Chat.ID,
-			"thread_id", reference.Telegram.ThreadID,
 		)
 	}
 }
