@@ -70,6 +70,19 @@ func (n *CodeBlockNode) String() string {
 	return "```" + text + "```"
 }
 
+// QuoteBlockNode represents a quote block.
+type QuoteBlockNode struct {
+	Children []Node
+}
+
+func (n *QuoteBlockNode) String() string {
+	var inner strings.Builder
+	for _, child := range n.Children {
+		inner.WriteString(child.String())
+	}
+	return "> " + inner.String() + "\n"
+}
+
 // LinkNode represents an inline link [text](url).
 type LinkNode struct {
 	Text string
@@ -206,8 +219,10 @@ func findClosing(text string, start int, token string) int {
 
 // buildAST parses the input string into an AST using UTF-8 aware decoding.
 func buildAST(input string) []Node {
-	var nodes []Node
-	i := 0
+	var (
+		nodes []Node
+		i     int
+	)
 	for i < len(input) {
 		r, size := utf8.DecodeRuneInString(input[i:])
 
@@ -309,6 +324,17 @@ func buildAST(input string) []Node {
 			nodes = append(nodes, &FormattingNode{Format: token, Children: children})
 			i = end + 2
 			continue
+		}
+
+		// Quote block: > ...
+		if strings.HasPrefix(input[i:], "> ") {
+			end := findClosing(input, i+len("> "), "\n")
+			if end != -1 {
+				children := buildAST(input[i+len("> ") : end])
+				nodes = append(nodes, &QuoteBlockNode{Children: children})
+				i = end + 1
+				continue
+			}
 		}
 
 		// Single-character formatting tokens: * and _

@@ -12,15 +12,18 @@ import (
 // markers (timestamps, mentions) with temporary markers, builds the AST, then renders it.
 func Parse(s *discordgo.Session, text string) string {
 	// Preprocess: replace Discord timestamps and mentions with marker strings.
-	text = preprocess(text, s)
+	text = preprocess(s, text)
 	// Build AST from the resulting text.
+	if !strings.HasSuffix(text, "\n") {
+		text = fmt.Sprintf("%s\n", text)
+	}
 	nodes := buildAST(text)
 	// Render AST back into a Telegram MarkdownV2 string.
-	return renderNodes(nodes, len(text))
+	return strings.TrimSpace(renderNodes(nodes, len(text)))
 }
 
 func AST(text string) []Node {
-	text = preprocess(text, nil)
+	text = preprocess(nil, text)
 	return buildAST(text)
 }
 
@@ -35,7 +38,7 @@ func renderNodes(nodes []Node, length int) string {
 }
 
 // preprocess converts tokens like <t:...> and <@...> into unique markers.
-func preprocess(text string, s *discordgo.Session) string {
+func preprocess(s *discordgo.Session, text string) string {
 	text = parseTimestampsToString(text)
 	text = replaceMentionsToString(s, text)
 	return text
