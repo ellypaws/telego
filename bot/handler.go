@@ -6,6 +6,7 @@ import (
 	"telegram-discord/lib/parser/parserv5"
 
 	"github.com/bwmarrin/discordgo"
+	"gopkg.in/telebot.v4"
 )
 
 func (b *Bot) registerMainHandler() {
@@ -227,7 +228,10 @@ func (b *Bot) messageUpdateHandler(s *discordgo.Session, m *discordgo.MessageUpd
 		)
 		return
 	}
-	edited, err := b.Telegram.Bot.Edit(reference.Telegram, toSend)
+	edited, err := b.Telegram.Bot.Edit(reference.Telegram, toSend, &telebot.SendOptions{
+		ParseMode: telebot.ModeMarkdownV2,
+		ThreadID:  reference.Telegram.ThreadID,
+	})
 	if err != nil {
 		b.Discord.Logger().Error(
 			"Failed to delete message from Telegram",
