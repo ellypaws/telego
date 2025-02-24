@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 
@@ -70,9 +71,20 @@ func ChannelName(s *discordgo.Session, id string) string {
 		return "unknown"
 	}
 
-	channel, err := s.Channel(id)
+	channel, err := s.State.Channel(id)
 	if err != nil {
-		return "unknown"
+		if errors.Is(err, discordgo.ErrStateNotFound) {
+			channel, err = s.Channel(id)
+			if err != nil {
+				return fmt.Sprintf("unknown")
+			}
+			err = s.State.ChannelAdd(channel)
+			if err != nil {
+				return fmt.Sprintf("%s [%v]", channel.Name, err)
+			}
+		} else {
+			return fmt.Sprintf("unknown")
+		}
 	}
 
 	return channel.Name
@@ -83,9 +95,20 @@ func ChannelNameID(s *discordgo.Session, id string) string {
 		return fmt.Sprintf("unknown (%s)", id)
 	}
 
-	channel, err := s.Channel(id)
+	channel, err := s.State.Channel(id)
 	if err != nil {
-		return fmt.Sprintf("unknown (%s)", id)
+		if errors.Is(err, discordgo.ErrStateNotFound) {
+			channel, err = s.Channel(id)
+			if err != nil {
+				return fmt.Sprintf("unknown (%s)", id)
+			}
+			err = s.State.ChannelAdd(channel)
+			if err != nil {
+				return fmt.Sprintf("%s (%s) [%v]", channel.Name, channel.ID, err)
+			}
+		} else {
+			return fmt.Sprintf("unknown (%s)", id)
+		}
 	}
 
 	return fmt.Sprintf("%s (%s)", channel.Name, channel.ID)

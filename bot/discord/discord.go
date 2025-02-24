@@ -73,16 +73,16 @@ func (b *Bot) Start() error {
 			"Discord bot logged in",
 			"user", fmt.Sprintf("%s#%s", s.State.User.Username, s.State.User.Discriminator),
 		)
+		b.logger.Debug(
+			"Discord connection established",
+			"channel", lib.ChannelNameID(b.Session, b.Channel),
+		)
 	})
 
 	err := b.Session.Open()
 	if err != nil {
 		return fmt.Errorf("error opening connection to Discord: %w", err)
 	}
-	b.logger.Debug(
-		"Discord connection established",
-		"channel", lib.ChannelNameID(b.Session, b.Channel),
-	)
 
 	err = b.load(err)
 	if err != nil {
