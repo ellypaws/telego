@@ -83,6 +83,28 @@ func (n *QuoteBlockNode) String() string {
 	return ">" + inner.String() + "\n"
 }
 
+type HeaderNode struct {
+	Level    int
+	Children []Node
+}
+
+func (n *HeaderNode) String() string {
+	var inner strings.Builder
+	for _, child := range n.Children {
+		inner.WriteString(child.String())
+	}
+	switch n.Level {
+	case 1:
+		return ">*" + strings.Trim(inner.String(), "*") + "*\n"
+	case 2:
+		return ">" + inner.String() + "\n"
+	case 3:
+		return "*" + strings.Trim(inner.String(), "*") + "*\n"
+	default:
+		return inner.String()
+	}
+}
+
 // LinkNode represents an inline link [text](url).
 type LinkNode struct {
 	Text string
@@ -324,6 +346,35 @@ func buildAST(input string) []Node {
 			nodes = append(nodes, &FormattingNode{Format: token, Children: children})
 			i = end + 2
 			continue
+		}
+
+		// Header: # ...
+		if strings.HasPrefix(input[i:], "### ") {
+			end := findClosing(input, i+len("### "), "\n")
+			if end != -1 {
+				children := buildAST(input[i+len("### ") : end])
+				nodes = append(nodes, &HeaderNode{Level: 3, Children: children})
+				i = end + 1
+				continue
+			}
+		}
+		if strings.HasPrefix(input[i:], "## ") {
+			end := findClosing(input, i+len("## "), "\n")
+			if end != -1 {
+				children := buildAST(input[i+len("## ") : end])
+				nodes = append(nodes, &HeaderNode{Level: 2, Children: children})
+				i = end + 1
+				continue
+			}
+		}
+		if strings.HasPrefix(input[i:], "# ") {
+			end := findClosing(input, i+len("# "), "\n")
+			if end != -1 {
+				children := buildAST(input[i+len("# ") : end])
+				nodes = append(nodes, &HeaderNode{Level: 1, Children: children})
+				i = end + 1
+				continue
+			}
 		}
 
 		// Quote block: > ...
