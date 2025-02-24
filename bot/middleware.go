@@ -2,8 +2,11 @@ package bot
 
 import (
 	"fmt"
-	"github.com/bwmarrin/discordgo"
 	"strings"
+
+	"telegram-discord/lib"
+
+	"github.com/bwmarrin/discordgo"
 )
 
 // HandlerFunc is a generic event handler that processes events of type T.
@@ -76,6 +79,15 @@ func SkipPrefixes(prefixes ...string) func(*discordgo.Session, *discordgo.Messag
 		}
 		return false
 	}
+}
+
+func IsUser(s *discordgo.Session, m *discordgo.MessageCreate) bool {
+	user := lib.GetUser(m)
+	if user == nil {
+		return false
+	}
+
+	return !user.Bot
 }
 
 // WhitelistMiddleware allows only messages from whitelisted user IDs.

@@ -36,6 +36,35 @@ func GetUsername(entities ...any) string {
 	return "unknown"
 }
 
+func GetUser(entities ...any) *discordgo.User {
+	for _, entity := range entities {
+		if reflect.ValueOf(entity).IsNil() {
+			continue
+		}
+		switch e := entity.(type) {
+		case *discordgo.User:
+			return e
+		case *discordgo.Member:
+			return e.User
+		case *discordgo.Message:
+			return GetUser(e.Author, e.Member)
+		case *discordgo.MessageCreate:
+			return GetUser(e.Message)
+		case *discordgo.MessageUpdate:
+			return GetUser(e.Message, e.BeforeUpdate)
+		case *discordgo.MessageDelete:
+			return GetUser(e.Message, e.BeforeDelete)
+		case *discordgo.Interaction:
+			return GetUser(e.Member, e.User)
+		case *discordgo.InteractionCreate:
+			return GetUser(e.Interaction)
+		default:
+			continue
+		}
+	}
+	return nil
+}
+
 func ChannelName(s *discordgo.Session, id string) string {
 	if s == nil {
 		return "unknown"

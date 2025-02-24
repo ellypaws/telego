@@ -10,9 +10,9 @@ import (
 func (b *Bot) registerMainHandler() {
 	b.Discord.Session.AddHandler(Chain(
 		b.mainHandler,
+		SkipperMiddleware(b, IsUser),
 		RetryMiddleware[*discordgo.MessageCreate](b, 3),
-		SkipperMiddleware(b, SkipPrefixes("Movie: ")),
-		//discord.WhitelistMiddleware(whitelist),
+		//WhitelistMiddleware(whitelist),
 	))
 
 	b.Discord.Session.AddHandler(Chain(
