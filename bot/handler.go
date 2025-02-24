@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"fmt"
 	"telegram-discord/lib"
 	"telegram-discord/lib/parser"
 	"telegram-discord/lib/parser/parserv5"
@@ -9,12 +10,37 @@ import (
 )
 
 func (b *Bot) registerMainHandler() {
-	b.Discord.Session.AddHandler(b.mainHandler)
-	b.Discord.Session.AddHandler(b.deleteMessageHandler)
-	b.Discord.Session.AddHandler(b.messageUpdateHandler)
+	b.Discord.Session.AddHandler(handlerWithRetry[*discordgo.MessageCreate](b, b.mainHandler, 3))
+	b.Discord.Session.AddHandler(handlerWithRetry[*discordgo.MessageDelete](b, b.deleteMessageHandler, 3))
+	b.Discord.Session.AddHandler(handlerWithRetry[*discordgo.MessageUpdate](b, b.messageUpdateHandler, 3))
 }
 
-func (b *Bot) mainHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
+func handlerWithRetry[T any](b *Bot, handler func(*discordgo.Session, T) error, retries int) func(*discordgo.Session, T) {
+	return func(s *discordgo.Session, event T) {
+		var err error
+		for i := 0; i < retries; i++ {
+			err = handler(s, event)
+			if err == nil {
+				return
+			}
+			if i < retries-1 {
+				b.Discord.Logger().Warn(
+					"Failed to handle message, retrying...",
+					"error", err,
+					"attempt", i+1,
+					"type", fmt.Sprintf("%T", event),
+				)
+			}
+		}
+		b.Discord.Logger().Error(
+			fmt.Sprintf("Failed to handle message after %d retries", retries),
+			"error", err,
+			"type", fmt.Sprintf("%T", event),
+		)
+	}
+}
+
+func (b *Bot) mainHandler(s *discordgo.Session, m *discordgo.MessageCreate) error {
 	if m.Author.ID == s.State.User.ID {
 		b.Discord.Logger().Debug(
 			"Skipping message - self message",
@@ -22,7 +48,7 @@ func (b *Bot) mainHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			"channel", lib.ChannelNameID(s, m.ChannelID),
 			"author", lib.GetUsername(m),
 		)
-		return
+		return nil
 	}
 
 	if b.Discord.Channel == "" {
@@ -32,7 +58,7 @@ func (b *Bot) mainHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			"channel", lib.ChannelNameID(s, m.ChannelID),
 			"author", lib.GetUsername(m),
 		)
-		return
+		return nil
 	}
 
 	if b.Telegram.Channel == 0 {
@@ -42,7 +68,7 @@ func (b *Bot) mainHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			"channel", lib.ChannelNameID(s, m.ChannelID),
 			"author", lib.GetUsername(m),
 		)
-		return
+		return nil
 	}
 
 	if m.ChannelID != b.Discord.Channel {
@@ -52,7 +78,7 @@ func (b *Bot) mainHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			"target_channel", lib.ChannelNameID(s, b.Discord.Channel),
 			"author", lib.GetUsername(m),
 		)
-		return
+		return nil
 	}
 
 	var (
@@ -76,7 +102,7 @@ func (b *Bot) mainHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 				"message_id", m.MessageReference.MessageID,
 				"author", lib.GetUsername(m.MessageReference),
 			)
-			return
+			return err
 		}
 		message = retrieve
 	}
@@ -95,7 +121,7 @@ func (b *Bot) mainHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			"channel", lib.ChannelNameID(s, message.ChannelID),
 			"author", lib.GetUsername(message),
 		)
-		return
+		return nil
 	}
 
 	b.Discord.Logger().Info(
@@ -116,6 +142,7 @@ func (b *Bot) mainHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			"author", lib.GetUsername(message),
 			"content_length", len(message.Content),
 		)
+		return err
 	} else {
 		b.Discord.Set(message, reference)
 		b.Discord.Logger().Info(
@@ -126,9 +153,10 @@ func (b *Bot) mainHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			"content_length", len(message.Content),
 		)
 	}
+	return nil
 }
 
-func (b *Bot) deleteMessageHandler(s *discordgo.Session, m *discordgo.MessageDelete) {
+func (b *Bot) deleteMessageHandler(s *discordgo.Session, m *discordgo.MessageDelete) error {
 	reference, ok := b.Discord.Get(m.Message)
 	if !ok {
 		b.Discord.Logger().Debug(
@@ -137,7 +165,7 @@ func (b *Bot) deleteMessageHandler(s *discordgo.Session, m *discordgo.MessageDel
 			"channel", lib.ChannelNameID(s, m.Message.ChannelID),
 			"author", lib.GetUsername(m),
 		)
-		return
+		return nil
 	}
 
 	b.Discord.Logger().Debug(
@@ -156,6 +184,7 @@ func (b *Bot) deleteMessageHandler(s *discordgo.Session, m *discordgo.MessageDel
 			"channel", lib.ChannelNameID(s, reference.Discord.ChannelID),
 			"author", lib.GetUsername(reference.Discord),
 		)
+		return err
 	} else {
 		b.Discord.Unset(m.Message)
 		b.Discord.Logger().Info(
@@ -165,9 +194,10 @@ func (b *Bot) deleteMessageHandler(s *discordgo.Session, m *discordgo.MessageDel
 			"author", lib.GetUsername(reference.Discord),
 		)
 	}
+	return nil
 }
 
-func (b *Bot) messageUpdateHandler(s *discordgo.Session, m *discordgo.MessageUpdate) {
+func (b *Bot) messageUpdateHandler(s *discordgo.Session, m *discordgo.MessageUpdate) error {
 	reference, ok := b.Discord.Get(m.Message)
 	if !ok {
 		b.Discord.Logger().Debug(
@@ -176,7 +206,7 @@ func (b *Bot) messageUpdateHandler(s *discordgo.Session, m *discordgo.MessageUpd
 			"channel", lib.ChannelNameID(s, m.Message.ChannelID),
 			"author", lib.GetUsername(m.Message),
 		)
-		return
+		return nil
 	}
 
 	b.Discord.Logger().Debug(
@@ -200,7 +230,7 @@ func (b *Bot) messageUpdateHandler(s *discordgo.Session, m *discordgo.MessageUpd
 			"channel", lib.ChannelNameID(s, m.Message.ChannelID),
 			"author", lib.GetUsername(m),
 		)
-		return
+		return nil
 	}
 	edited, err := b.Telegram.Edit(reference.Telegram, toSend)
 	if err != nil {
@@ -211,6 +241,7 @@ func (b *Bot) messageUpdateHandler(s *discordgo.Session, m *discordgo.MessageUpd
 			"channel", lib.ChannelNameID(s, m.Message.ChannelID),
 			"author", lib.GetUsername(m),
 		)
+		return err
 	} else {
 		b.Discord.Set(m.Message, edited)
 		b.Discord.Logger().Info(
@@ -220,4 +251,5 @@ func (b *Bot) messageUpdateHandler(s *discordgo.Session, m *discordgo.MessageUpd
 			"author", lib.GetUsername(m),
 		)
 	}
+	return nil
 }
