@@ -54,6 +54,7 @@ func New(token string, discordChannelID string, output io.Writer) (*Bot, error) 
 		channel = discordChannelID
 	}
 
+	dg.State.MaxMessageCount = 64
 	return &Bot{
 		Session: dg,
 		Channel: channel,

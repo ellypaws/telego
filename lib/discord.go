@@ -6,6 +6,7 @@ import (
 	"reflect"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/charmbracelet/log"
 )
 
 func GetUsername(entities ...any) string {
@@ -112,6 +113,57 @@ func ChannelNameID(s *discordgo.Session, id string) string {
 	}
 
 	return fmt.Sprintf("%s (%s)", channel.Name, channel.ID)
+}
+
+func GetReference(logger *log.Logger, s *discordgo.Session, m *discordgo.MessageCreate) (*discordgo.Message, error) {
+	logger.Debug(
+		"Processing message with reference",
+		"message_id", m.ID,
+		"reference_id", m.MessageReference.MessageID,
+		"author", GetUsername(m.MessageReference),
+	)
+	retrieve, err := s.State.Message(m.MessageReference.ChannelID, m.MessageReference.MessageID)
+	if err != nil {
+		if errors.Is(err, discordgo.ErrStateNotFound) {
+			logger.Warn(
+				"Message not found in state, attempting to retrieve",
+				"channel", ChannelNameID(s, m.MessageReference.ChannelID),
+				"message_id", m.MessageReference.MessageID,
+				"author", GetUsername(m.MessageReference),
+			)
+			retrieve, err = s.ChannelMessage(m.MessageReference.ChannelID, m.MessageReference.MessageID)
+			if err != nil {
+				logger.Error(
+					"Failed to retrieve referenced message",
+					"error", err,
+					"channel", ChannelNameID(s, m.MessageReference.ChannelID),
+					"message_id", m.MessageReference.MessageID,
+					"author", GetUsername(m.MessageReference),
+				)
+				return nil, err
+			}
+			err = s.State.MessageAdd(retrieve)
+			if err != nil {
+				logger.Warn(
+					"Failed to add referenced message to state",
+					"error", err,
+					"channel", ChannelNameID(s, m.MessageReference.ChannelID),
+					"message_id", m.MessageReference.MessageID,
+					"author", GetUsername(m.MessageReference),
+				)
+			}
+		} else {
+			logger.Error(
+				"Failed to retrieve referenced message",
+				"error", err,
+				"channel", ChannelNameID(s, m.MessageReference.ChannelID),
+				"message_id", m.MessageReference.MessageID,
+				"author", GetUsername(m.MessageReference),
+			)
+			return nil, err
+		}
+	}
+	return retrieve, nil
 }
 
 func Or[T any](item ...*T) *T {
