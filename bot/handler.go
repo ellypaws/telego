@@ -3,7 +3,6 @@ package bot
 import (
 	"fmt"
 	"telegram-discord/lib"
-	"telegram-discord/lib/parser"
 	"telegram-discord/lib/parser/parserv5"
 
 	"github.com/bwmarrin/discordgo"
@@ -113,7 +112,17 @@ func (b *Bot) mainHandler(s *discordgo.Session, m *discordgo.MessageCreate) erro
 		"channel", lib.ChannelNameID(s, message.ChannelID),
 		"author", lib.GetUsername(message),
 	)
-	toSend := parser.Sendable(s, message, parserv5.Parse)
+	toSend, err := parserv5.Sendable(s, message, parserv5.Parse)
+	if err != nil {
+		b.Discord.Logger().Error(
+			"Failed to process message",
+			"error", err,
+			"message_id", message.ID,
+			"channel", lib.ChannelNameID(s, message.ChannelID),
+			"author", lib.GetUsername(message),
+		)
+		return err
+	}
 	if toSend == nil {
 		b.Discord.Logger().Warn(
 			"Skipping message - no content to forward",
@@ -222,7 +231,17 @@ func (b *Bot) messageUpdateHandler(s *discordgo.Session, m *discordgo.MessageUpd
 		"channel", lib.ChannelNameID(s, m.ChannelID),
 		"author", lib.GetUsername(m),
 	)
-	toSend := parser.Sendable(s, m.Message, parserv5.Parse)
+	toSend, err := parserv5.Sendable(s, m.Message, parserv5.Parse)
+	if err != nil {
+		b.Discord.Logger().Error(
+			"Failed to process message",
+			"error", err,
+			"message_id", m.Message.ID,
+			"channel", lib.ChannelNameID(s, m.Message.ChannelID),
+			"author", lib.GetUsername(m),
+		)
+		return err
+	}
 	if toSend == nil {
 		b.Discord.Logger().Warn(
 			"Skipping message - no content to edit",
