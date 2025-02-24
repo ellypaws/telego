@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -56,14 +57,15 @@ func RetryMiddleware[T any](b *Bot, retries int) Middleware[T] {
 	}
 }
 
-func SkipperMiddleware[T any](b *Bot, skippers ...func(*discordgo.Session, T) bool) Middleware[T] {
+func SkipperMiddleware[T any](b *Bot, skippers ...func(*discordgo.Session, T) error) Middleware[T] {
 	return func(next HandlerFunc[T]) HandlerFunc[T] {
 		return func(s *discordgo.Session, event T) error {
 			for _, skipper := range skippers {
-				if skipper(s, event) {
+				if err := skipper(s, event); err != nil {
 					b.Discord.Logger().Debug(
 						"Skipping event",
 						"type", fmt.Sprintf("%T", event),
+						"reason", err,
 					)
 					return nil
 				}
@@ -73,24 +75,31 @@ func SkipperMiddleware[T any](b *Bot, skippers ...func(*discordgo.Session, T) bo
 	}
 }
 
-func SkipPrefixes(prefixes ...string) func(*discordgo.Session, *discordgo.MessageCreate) bool {
-	return func(s *discordgo.Session, m *discordgo.MessageCreate) bool {
+func SkipPrefixes(prefixes ...string) func(*discordgo.Session, *discordgo.MessageCreate) error {
+	return func(s *discordgo.Session, m *discordgo.MessageCreate) error {
 		for _, prefix := range prefixes {
 			if strings.HasPrefix(m.Message.Content, prefix) {
-				return true
+				return fmt.Errorf("message starts with prefix %q", prefix)
 			}
 		}
-		return false
+		return nil
 	}
 }
 
-func IsUser(s *discordgo.Session, m *discordgo.MessageCreate) bool {
+var (
+	ErrUserNotBot = errors.New("user is not a bot")
+)
+
+func OnlyBots(s *discordgo.Session, m *discordgo.MessageCreate) error {
 	user := lib.GetUser(m)
 	if user == nil {
-		return false
+		return nil
 	}
 
-	return !user.Bot
+	if !user.Bot {
+		return ErrUserNotBot
+	}
+	return nil
 }
 
 // WhitelistMiddleware allows only messages from whitelisted user IDs.

@@ -10,7 +10,7 @@ import (
 func (b *Bot) registerMainHandler() {
 	b.Discord.Session.AddHandler(Chain(
 		b.mainHandler,
-		SkipperMiddleware(b, IsUser),
+		SkipperMiddleware(b, OnlyBots),
 		RetryMiddleware[*discordgo.MessageCreate](b, 3),
 		//WhitelistMiddleware(whitelist),
 	))
