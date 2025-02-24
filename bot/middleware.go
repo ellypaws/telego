@@ -50,15 +50,17 @@ func RetryMiddleware[T any](b *Bot, retries int) Middleware[T] {
 	}
 }
 
-func SkipperMiddleware[T any](b *Bot, skipper func(*discordgo.Session, T) bool) Middleware[T] {
+func SkipperMiddleware[T any](b *Bot, skippers ...func(*discordgo.Session, T) bool) Middleware[T] {
 	return func(next HandlerFunc[T]) HandlerFunc[T] {
 		return func(s *discordgo.Session, event T) error {
-			if skipper(s, event) {
-				b.Discord.Logger().Debug(
-					"Skipping event",
-					"type", fmt.Sprintf("%T", event),
-				)
-				return nil
+			for _, skipper := range skippers {
+				if skipper(s, event) {
+					b.Discord.Logger().Debug(
+						"Skipping event",
+						"type", fmt.Sprintf("%T", event),
+					)
+					return nil
+				}
 			}
 			return next(s, event)
 		}
