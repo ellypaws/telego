@@ -80,7 +80,7 @@ func (n *QuoteBlockNode) String() string {
 	for _, child := range n.Children {
 		inner.WriteString(child.String())
 	}
-	return "> " + inner.String() + "\n"
+	return ">" + inner.String() + "\n"
 }
 
 // LinkNode represents an inline link [text](url).
