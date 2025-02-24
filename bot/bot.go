@@ -95,11 +95,9 @@ func New(config Config) (*Bot, error) {
 }
 
 func (b *Bot) Start() error {
-	var wg sync.WaitGroup
+	errChan := make(chan error, len(b.Bots))
 	for _, bot := range b.Bots {
-		wg.Add(1)
 		go func(bot Bots) {
-			defer wg.Done()
 			bot.Logger().Debug(
 				"Starting bot",
 				"type", fmt.Sprintf("%T", bot),
@@ -111,6 +109,7 @@ func (b *Bot) Start() error {
 					"type", fmt.Sprintf("%T", bot),
 					"error", err,
 				)
+				errChan <- err
 				return
 			}
 			bot.Logger().Info(
@@ -129,6 +128,7 @@ func (b *Bot) Start() error {
 					"type", fmt.Sprintf("%T", bot),
 					"error", err,
 				)
+				errChan <- err
 				return
 			}
 			bot.Logger().Debug(
@@ -137,9 +137,16 @@ func (b *Bot) Start() error {
 			)
 
 			bot.Handlers()
+			errChan <- nil
 		}(bot)
 	}
-	wg.Wait()
+
+	defer close(errChan)
+	for range len(b.Bots) {
+		if err := <-errChan; err != nil {
+			return err
+		}
+	}
 
 	b.registerMainHandler()
 	b.Discord.Logger().Info("Message mirroring bot is running")
