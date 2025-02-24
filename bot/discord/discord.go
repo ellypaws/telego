@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"telegram-discord/lib"
+
 	"github.com/bwmarrin/discordgo"
 	"github.com/charmbracelet/log"
 	"github.com/muesli/termenv"
@@ -79,7 +81,7 @@ func (b *Bot) Start() error {
 	}
 	b.logger.Debug(
 		"Discord connection established",
-		"channel_id", b.Channel,
+		"channel", lib.ChannelNameID(b.Session, b.Channel),
 	)
 
 	err = b.load(err)

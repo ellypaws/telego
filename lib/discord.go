@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"fmt"
 	"reflect"
 
 	"github.com/bwmarrin/discordgo"
@@ -33,6 +34,32 @@ func GetUsername(entities ...any) string {
 		}
 	}
 	return "unknown"
+}
+
+func ChannelName(s *discordgo.Session, id string) string {
+	if s == nil {
+		return "unknown"
+	}
+
+	channel, err := s.Channel(id)
+	if err != nil {
+		return "unknown"
+	}
+
+	return channel.Name
+}
+
+func ChannelNameID(s *discordgo.Session, id string) string {
+	if s == nil {
+		return fmt.Sprintf("unknown (%s)", id)
+	}
+
+	channel, err := s.Channel(id)
+	if err != nil {
+		return fmt.Sprintf("unknown (%s)", id)
+	}
+
+	return fmt.Sprintf("%s (%s)", channel.Name, channel.ID)
 }
 
 func Or[T any](item ...*T) *T {

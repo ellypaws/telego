@@ -19,7 +19,7 @@ func (b *Bot) mainHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		b.Discord.Logger().Debug(
 			"Skipping message - self message",
 			"message_id", m.ID,
-			"channel_id", m.ChannelID,
+			"channel", lib.ChannelNameID(s, m.ChannelID),
 			"author", lib.GetUsername(m),
 		)
 		return
@@ -29,7 +29,7 @@ func (b *Bot) mainHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		b.Discord.Logger().Warn(
 			"Skipping message - Discord channel not registered",
 			"message_id", m.ID,
-			"channel_id", m.ChannelID,
+			"channel", lib.ChannelNameID(s, m.ChannelID),
 			"author", lib.GetUsername(m),
 		)
 		return
@@ -39,7 +39,7 @@ func (b *Bot) mainHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		b.Telegram.Logger().Warn(
 			"Skipping message - Telegram channel not registered",
 			"message_id", m.ID,
-			"channel_id", m.ChannelID,
+			"channel", lib.ChannelNameID(s, m.ChannelID),
 			"author", lib.GetUsername(m),
 		)
 		return
@@ -48,8 +48,8 @@ func (b *Bot) mainHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.ChannelID != b.Discord.Channel {
 		b.Discord.Logger().Debug(
 			"Skipping message - wrong channel",
-			"received_channel", m.ChannelID,
-			"target_channel", b.Discord.Channel,
+			"received_channel", lib.ChannelNameID(s, m.ChannelID),
+			"target_channel", lib.ChannelNameID(s, b.Discord.Channel),
 			"author", lib.GetUsername(m),
 		)
 		return
@@ -72,7 +72,7 @@ func (b *Bot) mainHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			b.Discord.Logger().Error(
 				"Failed to retrieve referenced message",
 				"error", err,
-				"channel_id", m.MessageReference.ChannelID,
+				"channel", lib.ChannelNameID(s, m.MessageReference.ChannelID),
 				"message_id", m.MessageReference.MessageID,
 				"author", lib.GetUsername(m.MessageReference),
 			)
@@ -84,15 +84,15 @@ func (b *Bot) mainHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	b.Discord.Logger().Debug(
 		"Processing message",
 		"message_id", message.ID,
-		"channel_id", message.ChannelID,
+		"channel", lib.ChannelNameID(s, message.ChannelID),
 		"author", lib.GetUsername(message),
 	)
 	toSend := parser.Sendable(s, message, parserv5.Parse)
 	if toSend == nil {
-		b.Telegram.Logger().Warn(
+		b.Discord.Logger().Warn(
 			"Skipping message - no content to forward",
 			"message_id", message.ID,
-			"channel_id", message.ChannelID,
+			"channel", lib.ChannelNameID(s, message.ChannelID),
 			"author", lib.GetUsername(message),
 		)
 		return
@@ -101,7 +101,7 @@ func (b *Bot) mainHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	b.Discord.Logger().Info(
 		"Forwarding message to Telegram",
 		"message_id", message.ID,
-		"channel_id", message.ChannelID,
+		"channel", lib.ChannelNameID(s, message.ChannelID),
 		"author", lib.GetUsername(message),
 		"content_length", len(message.Content),
 	)
@@ -112,7 +112,7 @@ func (b *Bot) mainHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			"Failed to forward message to Telegram",
 			"error", err,
 			"message_id", message.ID,
-			"channel_id", message.ChannelID,
+			"channel", lib.ChannelNameID(s, message.ChannelID),
 			"author", lib.GetUsername(message),
 			"content_length", len(message.Content),
 		)
@@ -121,7 +121,7 @@ func (b *Bot) mainHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		b.Discord.Logger().Info(
 			"Successfully forwarded message to Telegram",
 			"message_id", message.ID,
-			"channel_id", message.ChannelID,
+			"channel", lib.ChannelNameID(s, message.ChannelID),
 			"author", lib.GetUsername(message),
 			"content_length", len(message.Content),
 		)
@@ -134,7 +134,7 @@ func (b *Bot) deleteMessageHandler(s *discordgo.Session, m *discordgo.MessageDel
 		b.Discord.Logger().Debug(
 			"Message was deleted but not tracked",
 			"message_id", m.Message.ID,
-			"channel_id", m.Message.ChannelID,
+			"channel", lib.ChannelNameID(s, m.Message.ChannelID),
 			"author", lib.GetUsername(m),
 		)
 		return
@@ -143,7 +143,7 @@ func (b *Bot) deleteMessageHandler(s *discordgo.Session, m *discordgo.MessageDel
 	b.Discord.Logger().Debug(
 		"Message was deleted, deleting from Telegram",
 		"message_id", m.Message.ID,
-		"channel_id", m.Message.ChannelID,
+		"channel", lib.ChannelNameID(s, m.Message.ChannelID),
 		"author", lib.GetUsername(m.Message),
 	)
 
@@ -153,7 +153,7 @@ func (b *Bot) deleteMessageHandler(s *discordgo.Session, m *discordgo.MessageDel
 			"Failed to delete message from Telegram",
 			"error", err,
 			"message_id", reference.Discord.ID,
-			"channel_id", reference.Discord.ChannelID,
+			"channel", lib.ChannelNameID(s, reference.Discord.ChannelID),
 			"author", lib.GetUsername(reference.Discord),
 		)
 	} else {
@@ -161,7 +161,7 @@ func (b *Bot) deleteMessageHandler(s *discordgo.Session, m *discordgo.MessageDel
 		b.Discord.Logger().Info(
 			"Successfully deleted message from Telegram",
 			"message_id", reference.Discord.ID,
-			"channel_id", reference.Discord.ChannelID,
+			"channel", lib.ChannelNameID(s, reference.Discord.ChannelID),
 			"author", lib.GetUsername(reference.Discord),
 		)
 	}
@@ -173,7 +173,7 @@ func (b *Bot) messageUpdateHandler(s *discordgo.Session, m *discordgo.MessageUpd
 		b.Discord.Logger().Debug(
 			"Message was updated but not tracked",
 			"message_id", m.Message.ID,
-			"channel_id", m.Message.ChannelID,
+			"channel", lib.ChannelNameID(s, m.Message.ChannelID),
 			"author", lib.GetUsername(m.Message),
 		)
 		return
@@ -182,22 +182,22 @@ func (b *Bot) messageUpdateHandler(s *discordgo.Session, m *discordgo.MessageUpd
 	b.Discord.Logger().Debug(
 		"Message was updated, updating in Telegram",
 		"message_id", reference.Discord.ID,
-		"channel_id", reference.Discord.ChannelID,
+		"channel", lib.ChannelNameID(s, reference.Discord.ChannelID),
 		"author", lib.GetUsername(reference.Discord),
 	)
 
 	b.Discord.Logger().Debug(
 		"Processing message",
 		"message_id", m.ID,
-		"channel_id", m.ChannelID,
+		"channel", lib.ChannelNameID(s, m.ChannelID),
 		"author", lib.GetUsername(m),
 	)
 	toSend := parser.Sendable(s, m.Message, parserv5.Parse)
 	if toSend == nil {
-		b.Telegram.Logger().Warn(
+		b.Discord.Logger().Warn(
 			"Skipping message - no content to edit",
 			"message_id", m.Message.ID,
-			"channel_id", m.Message.ChannelID,
+			"channel", lib.ChannelNameID(s, m.Message.ChannelID),
 			"author", lib.GetUsername(m),
 		)
 		return
@@ -208,7 +208,7 @@ func (b *Bot) messageUpdateHandler(s *discordgo.Session, m *discordgo.MessageUpd
 			"Failed to edit message in Telegram",
 			"error", err,
 			"message_id", m.Message.ID,
-			"channel_id", m.Message.ChannelID,
+			"channel", lib.ChannelNameID(s, m.Message.ChannelID),
 			"author", lib.GetUsername(m),
 		)
 	} else {
@@ -216,7 +216,7 @@ func (b *Bot) messageUpdateHandler(s *discordgo.Session, m *discordgo.MessageUpd
 		b.Discord.Logger().Info(
 			"Successfully edited message in Telegram",
 			"message_id", m.Message.ID,
-			"channel_id", m.Message.ChannelID,
+			"channel", lib.ChannelNameID(s, m.Message.ChannelID),
 			"author", lib.GetUsername(m),
 		)
 	}
