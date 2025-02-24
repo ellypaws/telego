@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/charmbracelet/log"
@@ -173,4 +174,54 @@ func Or[T any](item ...*T) *T {
 		}
 	}
 	return nil
+}
+
+func ErrorEmbed(handler string, errorContent ...any) []*discordgo.MessageEmbed {
+	return []*discordgo.MessageEmbed{
+		{
+			Type: discordgo.EmbedTypeRich,
+			Fields: []*discordgo.MessageEmbedField{
+				{
+					Name:   "Error",
+					Value:  formatError(errorContent),
+					Inline: false,
+				},
+				{
+					Name:   "Handler",
+					Value:  handler,
+					Inline: false,
+				},
+			},
+			Color: 15548997,
+		},
+	}
+}
+
+func formatError(errorContent ...any) string {
+	if errorContent == nil || len(errorContent) < 1 {
+		errorContent = []any{"An unknown error has occurred"}
+	}
+
+	var errors []string
+	for _, content := range errorContent {
+		switch content := content.(type) {
+		case string:
+			errors = append(errors, content)
+		case []string:
+			errors = append(errors, content...)
+		case error:
+			errors = append(errors, content.Error())
+		case []any:
+			errors = append(errors, formatError(content...)) // Recursively format the error
+		default:
+			errors = append(errors, fmt.Sprintf("An unknown error has occured\nReceived: %v", content))
+		}
+	}
+
+	errorString := strings.Join(errors, "\n")
+	if len(errors) > 1 {
+		errorString = fmt.Sprintf("Multiple errors have occurred:\n%s", errorString)
+	}
+
+	return errorString
 }

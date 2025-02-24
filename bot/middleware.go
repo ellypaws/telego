@@ -115,3 +115,25 @@ func WhitelistMiddleware(whitelist map[string]bool) Middleware[*discordgo.Messag
 		}
 	}
 }
+
+func NotifyOnErrorMiddleware[T any](ids ...string) Middleware[T] {
+	return func(next HandlerFunc[T]) HandlerFunc[T] {
+		return func(s *discordgo.Session, event T) error {
+			handlerError := next(s, event)
+			if handlerError == nil {
+				return nil
+			}
+			for _, id := range ids {
+				channel, channelErr := s.UserChannelCreate(id)
+				if channelErr != nil {
+					return channelErr
+				}
+				_, sendErr := s.ChannelMessageSendComplex(channel.ID, &discordgo.MessageSend{
+					Embeds: lib.ErrorEmbed(fmt.Sprintf("%T", event), handlerError),
+				})
+				return sendErr
+			}
+			return nil
+		}
+	}
+}
