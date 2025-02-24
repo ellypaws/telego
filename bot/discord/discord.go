@@ -87,8 +87,7 @@ func (b *Bot) Start() error {
 
 	err = b.load(err)
 	if err != nil {
-		b.logger.Error("Error loading tracked messages", "error", err)
-		return err
+		b.logger.Warn("Error loading tracked messages", "error", err)
 	}
 
 	return nil
@@ -97,7 +96,7 @@ func (b *Bot) Start() error {
 func (b *Bot) Stop() error {
 	err := b.save()
 	if err != nil {
-		return err
+		b.logger.Warn("Error saving tracked messages", "error", err)
 	}
 
 	b.logger.Info("Closing Discord connection")
