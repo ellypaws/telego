@@ -17,11 +17,14 @@ type Middleware[T any] func(HandlerFunc[T]) HandlerFunc[T]
 
 // Chain applies the given middlewares to a handler.
 // The first middleware in the slice will be the outermost.
-func Chain[T any](handler HandlerFunc[T], middlewares ...Middleware[T]) HandlerFunc[T] {
+func Chain[T any](handler HandlerFunc[T], middlewares ...Middleware[T]) func(*discordgo.Session, T) {
+	h := handler
 	for i := len(middlewares) - 1; i >= 0; i-- {
-		handler = middlewares[i](handler)
+		h = middlewares[i](h)
 	}
-	return handler
+	return func(s *discordgo.Session, event T) {
+		_ = h(s, event)
+	}
 }
 
 // RetryMiddleware retries the inner handler up to 'retries' times.
