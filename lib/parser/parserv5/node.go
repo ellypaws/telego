@@ -336,16 +336,13 @@ func buildAST(input string) []Node {
 			strings.HasPrefix(input[i:], "||") || strings.HasPrefix(input[i:], "~~") {
 			token := input[i : i+2]
 			end := findClosing(input, i+2, token)
-			if end == -1 {
-				nodes = append(nodes, &TextNode{Text: token})
-				i += 2
+			if end != -1 {
+				innerContent := input[i+2 : end]
+				children := buildAST(innerContent)
+				nodes = append(nodes, &FormattingNode{Format: token, Children: children})
+				i = end + 2
 				continue
 			}
-			innerContent := input[i+2 : end]
-			children := buildAST(innerContent)
-			nodes = append(nodes, &FormattingNode{Format: token, Children: children})
-			i = end + 2
-			continue
 		}
 
 		// Header: # ...
@@ -392,16 +389,13 @@ func buildAST(input string) []Node {
 		if r == '*' || r == '_' {
 			token := input[i : i+size]
 			end := findClosing(input, i+size, token)
-			if end == -1 {
-				nodes = append(nodes, &TextNode{Text: token})
-				i += size
+			if end != -1 {
+				innerContent := input[i+size : end]
+				children := buildAST(innerContent)
+				nodes = append(nodes, &FormattingNode{Format: token, Children: children})
+				i = end + size
 				continue
 			}
-			innerContent := input[i+size : end]
-			children := buildAST(innerContent)
-			nodes = append(nodes, &FormattingNode{Format: token, Children: children})
-			i = end + size
-			continue
 		}
 
 		// Default: treat current rune as plain text.
