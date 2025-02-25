@@ -29,7 +29,9 @@ func Chain[T any](handler HandlerFunc[T], middlewares ...Middleware[T]) func(*di
 }
 
 // RetryMiddleware retries the inner handler up to 'retries' times.
-func RetryMiddleware[T any](b *Bot, retries int) Middleware[T] {
+// If the error returned by the inner handler is in the 'ignore' list,
+// the error is ignored and the handler is not retried.
+func RetryMiddleware[T any](b *Bot, retries int, ignore ...error) Middleware[T] {
 	return func(next HandlerFunc[T]) HandlerFunc[T] {
 		return func(s *discordgo.Session, event T) error {
 			var err error
@@ -37,6 +39,17 @@ func RetryMiddleware[T any](b *Bot, retries int) Middleware[T] {
 				err = next(s, event)
 				if err == nil {
 					return nil
+				}
+				for _, skip := range ignore {
+					if errors.Is(err, skip) {
+						b.Discord.Logger().Warn(
+							"Error returned but is marked as ignore, will not retry",
+							"error", err,
+							"skip", skip,
+							"type", fmt.Sprintf("%T", event),
+						)
+						return nil
+					}
 				}
 				if i < retries-1 {
 					b.Discord.Logger().Warn(
