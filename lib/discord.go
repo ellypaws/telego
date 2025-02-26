@@ -20,7 +20,7 @@ func GetUsername(entities ...any) string {
 		case *discordgo.User:
 			return e.Username
 		case *discordgo.Member:
-			return e.User.Username
+			return GetUsername(e.User)
 		case *discordgo.Message:
 			return GetUsername(e.Author, e.Member)
 		case *discordgo.MessageCreate:
@@ -50,7 +50,7 @@ func GetUser(entities ...any) *discordgo.User {
 		case *discordgo.User:
 			return e
 		case *discordgo.Member:
-			return e.User
+			return GetUser(e.User)
 		case *discordgo.Message:
 			return GetUser(e.Author, e.Member)
 		case *discordgo.MessageCreate:
