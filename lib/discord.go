@@ -12,7 +12,8 @@ import (
 
 func GetUsername(entities ...any) string {
 	for _, entity := range entities {
-		if reflect.ValueOf(entity).IsNil() {
+		v := reflect.ValueOf(entity)
+		if v.Kind() == reflect.Pointer && v.IsNil() {
 			continue
 		}
 		switch e := entity.(type) {
@@ -41,7 +42,8 @@ func GetUsername(entities ...any) string {
 
 func GetUser(entities ...any) *discordgo.User {
 	for _, entity := range entities {
-		if reflect.ValueOf(entity).IsNil() {
+		v := reflect.ValueOf(entity)
+		if v.Kind() == reflect.Pointer && v.IsNil() {
 			continue
 		}
 		switch e := entity.(type) {
