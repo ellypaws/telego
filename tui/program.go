@@ -1,8 +1,9 @@
 package tui
 
 import (
-	"telegram-discord/tui/components/logger"
 	"time"
+
+	"telegram-discord/tui/components/logger"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
