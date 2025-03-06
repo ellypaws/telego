@@ -61,14 +61,14 @@ func ChannelName(s *discordgo.Session, id string) string {
 		if errors.Is(err, discordgo.ErrStateNotFound) {
 			channel, err = s.Channel(id)
 			if err != nil {
-				return fmt.Sprintf("unknown")
+				return "unknown"
 			}
 			err = s.State.ChannelAdd(channel)
 			if err != nil {
 				return fmt.Sprintf("%s [%v]", channel.Name, err)
 			}
 		} else {
-			return fmt.Sprintf("unknown")
+			return "unknown"
 		}
 	}
 
