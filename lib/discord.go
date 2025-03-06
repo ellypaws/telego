@@ -11,31 +11,8 @@ import (
 )
 
 func GetUsername(entities ...any) string {
-	for _, entity := range entities {
-		v := reflect.ValueOf(entity)
-		if v.Kind() == reflect.Pointer && v.IsNil() {
-			continue
-		}
-		switch e := entity.(type) {
-		case *discordgo.User:
-			return e.Username
-		case *discordgo.Member:
-			return GetUsername(e.User)
-		case *discordgo.Message:
-			return GetUsername(e.Author, e.Member)
-		case *discordgo.MessageCreate:
-			return GetUsername(e.Message)
-		case *discordgo.MessageUpdate:
-			return GetUsername(e.Message, e.BeforeUpdate)
-		case *discordgo.MessageDelete:
-			return GetUsername(e.Message, e.BeforeDelete)
-		case *discordgo.Interaction:
-			return GetUsername(e.Member, e.User)
-		case *discordgo.InteractionCreate:
-			return GetUsername(e.Interaction)
-		default:
-			continue
-		}
+	if user := GetUser(entities...); user != nil {
+		return user.Username
 	}
 	return "unknown"
 }
@@ -63,6 +40,10 @@ func GetUser(entities ...any) *discordgo.User {
 			return GetUser(e.Member, e.User)
 		case *discordgo.InteractionCreate:
 			return GetUser(e.Interaction)
+		case *discordgo.MessageInteraction:
+			return GetUser(e.User, e.Member)
+		case *discordgo.MessageInteractionMetadata:
+			return GetUser(e.User)
 		default:
 			continue
 		}
