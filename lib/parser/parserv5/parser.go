@@ -70,11 +70,11 @@ func replaceMentionsToString(s *discordgo.Session, text string) string {
 			return match
 		}
 		if s == nil {
-			return fmt.Sprintf("[[MENTION:%s]]", matches[1])
+			return match
 		}
 		user, err := s.User(matches[1])
 		if err != nil {
-			return fmt.Sprintf("[[MENTION:%s]]", matches[1])
+			return match
 		}
 		return fmt.Sprintf("[[MENTION:@%s]]", user.Username)
 	})
@@ -85,11 +85,11 @@ func replaceMentionsToString(s *discordgo.Session, text string) string {
 			return match
 		}
 		if s == nil {
-			return fmt.Sprintf("[[CHANNEL:%s]]", matches[1])
+			return match
 		}
 		channel, err := s.Channel(matches[1])
 		if err != nil {
-			return fmt.Sprintf("[[CHANNEL:%s]]", matches[1])
+			return match
 		}
 		return fmt.Sprintf("[[CHANNEL:#%s]]", channel.Name)
 	})
