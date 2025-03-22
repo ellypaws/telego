@@ -80,7 +80,7 @@ func (b *Bot) mainHandler(s *discordgo.Session, m *discordgo.MessageCreate) erro
 		"channel", lib.ChannelNameID(s, message.ChannelID),
 		"author", lib.GetUsername(message),
 	)
-	toSend, err := parserv5.Sendable(s, message, parserv5.Parse)
+	toSend, err := parserv5.Sendable(s, message, parserv5.Parser(s, message))
 	if err != nil {
 		b.Discord.Logger().Error(
 			"Failed to process message",
@@ -192,7 +192,7 @@ func (b *Bot) messageUpdateHandler(s *discordgo.Session, m *discordgo.MessageUpd
 		"channel", lib.ChannelNameID(s, m.ChannelID),
 		"author", lib.GetUsername(m),
 	)
-	toSend, err := parserv5.Sendable(s, m.Message, parserv5.Parse)
+	toSend, err := parserv5.Sendable(s, m.Message, parserv5.Parser(s, m.Message))
 	if err != nil {
 		b.Discord.Logger().Error(
 			"Failed to process message",

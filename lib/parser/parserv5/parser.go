@@ -8,9 +8,15 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+func Parser(s *discordgo.Session, m *discordgo.Message) func(string) string {
+	return func(text string) string {
+		return Parse(s, m, text)
+	}
+}
+
 // Parse is the entry point. It first pre-processes the text to replace Discord-specific
 // markers (timestamps, mentions) with temporary markers, builds the AST, then renders it.
-func Parse(s *discordgo.Session, text string) string {
+func Parse(s *discordgo.Session, m *discordgo.Message, text string) string {
 	// Preprocess: replace Discord timestamps and mentions with marker strings.
 	text = preprocess(s, text)
 	// Build AST from the resulting text.
