@@ -41,6 +41,7 @@ func renderNodes(nodes []Node, length int) string {
 func preprocess(s *discordgo.Session, text string) string {
 	text = parseTimestampsToString(text)
 	text = replaceMentionsToString(s, text)
+	text = removeCustomEmojis(text)
 	return text
 }
 
@@ -60,6 +61,7 @@ func parseTimestampsToString(text string) string {
 var (
 	userRe    = regexp.MustCompile(`<@!?(?P<ID>\d+)>`)
 	channelRe = regexp.MustCompile(`<#(?P<ID>\d+)>`)
+	emojiRe   = regexp.MustCompile(`<:(?P<name>\w+):(?P<id>\d+)>`)
 )
 
 func replaceMentionsToString(s *discordgo.Session, text string) string {
@@ -95,4 +97,8 @@ func replaceMentionsToString(s *discordgo.Session, text string) string {
 	})
 	// Additional markers (e.g. for roles) can be handled similarly.
 	return text
+}
+
+func removeCustomEmojis(text string) string {
+	return emojiRe.ReplaceAllString(text, "")
 }
