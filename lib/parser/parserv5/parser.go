@@ -18,7 +18,7 @@ func Parser(s *discordgo.Session, m *discordgo.Message) func(string) string {
 // markers (timestamps, mentions) with temporary markers, builds the AST, then renders it.
 func Parse(s *discordgo.Session, m *discordgo.Message, text string) string {
 	// Preprocess: replace Discord timestamps and mentions with marker strings.
-	text = preprocess(s, text)
+	text = preprocess(s, m, text)
 	// Build AST from the resulting text.
 	if !strings.HasSuffix(text, "\n") {
 		text = fmt.Sprintf("%s\n", text)
@@ -29,7 +29,7 @@ func Parse(s *discordgo.Session, m *discordgo.Message, text string) string {
 }
 
 func AST(text string) []Node {
-	text = preprocess(nil, text)
+	text = preprocess(nil, nil, text)
 	return buildAST(text)
 }
 
@@ -44,9 +44,9 @@ func renderNodes(nodes []Node, length int) string {
 }
 
 // preprocess converts tokens like <t:...> and <@...> into unique markers.
-func preprocess(s *discordgo.Session, text string) string {
+func preprocess(s *discordgo.Session, m *discordgo.Message, text string) string {
 	text = parseTimestampsToString(text)
-	text = replaceMentionsToString(s, text)
+	text = replaceMentionsToString(s, m, text)
 	text = removeCustomEmojis(text)
 	return text
 }
@@ -65,12 +65,13 @@ func parseTimestampsToString(text string) string {
 }
 
 var (
-	userRe    = regexp.MustCompile(`<@!?(?P<ID>\d+)>`)
-	channelRe = regexp.MustCompile(`<#(?P<ID>\d+)>`)
+	userRe    = regexp.MustCompile(`<@!?(?P<id>\d+)>`)
+	roleRe    = regexp.MustCompile(`<@&(?P<id>\d+)>`)
+	channelRe = regexp.MustCompile(`<#(?P<id>\d+)>`)
 	emojiRe   = regexp.MustCompile(`<:(?P<name>\w+):(?P<id>\d+)>`)
 )
 
-func replaceMentionsToString(s *discordgo.Session, text string) string {
+func replaceMentionsToString(s *discordgo.Session, m *discordgo.Message, text string) string {
 	// User mentions.
 	text = userRe.ReplaceAllStringFunc(text, func(match string) string {
 		matches := userRe.FindStringSubmatch(match)
@@ -85,6 +86,21 @@ func replaceMentionsToString(s *discordgo.Session, text string) string {
 			return match
 		}
 		return fmt.Sprintf("[[MENTION:@%s]]", user.Username)
+	})
+	// Role mentions.
+	text = roleRe.ReplaceAllStringFunc(text, func(match string) string {
+		matches := roleRe.FindStringSubmatch(match)
+		if len(matches) < 2 {
+			return match
+		}
+		if s == nil || m == nil {
+			return match
+		}
+		role, err := s.State.Role(m.GuildID, matches[1])
+		if err != nil {
+			return match
+		}
+		return fmt.Sprintf("[[MENTION:@%s]]", role.Name)
 	})
 	// Channel mentions.
 	text = channelRe.ReplaceAllStringFunc(text, func(match string) string {
