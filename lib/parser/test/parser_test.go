@@ -536,6 +536,13 @@ __underline__
 				"```\npre-formatted fixed-width code block\n```\n" +
 				"```python\npre-formatted fixed-width code block written in the Python programming language\n```",
 		},
+		{
+			name: "Not a quote block",
+			input: `:>  
+:`,
+			expected: `:\>  
+:`,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

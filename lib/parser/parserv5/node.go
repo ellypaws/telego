@@ -375,7 +375,7 @@ func buildAST(input string) []Node {
 		}
 
 		// Quote block: > ...
-		if strings.HasPrefix(input[i:], "> ") {
+		if (i == 0 || input[i-1] == '\n') && strings.HasPrefix(input[i:], "> ") {
 			end := findClosing(input, i+len("> "), "\n")
 			if end != -1 {
 				children := buildAST(input[i+len("> ") : end])
