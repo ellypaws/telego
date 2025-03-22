@@ -539,7 +539,7 @@ __underline__
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := parserv5.Parse(session, tt.input)
+			got := parserv5.Parse(session, nil, tt.input)
 			if got != tt.expected {
 				t.Errorf("DiscordToTelegramMarkdown(%q) = %q; want %q", tt.input, got, tt.expected)
 				saveAsJSONFile(t, fmt.Sprintf("./bot/parser/test/debug_%s.json", tt.name), parserv2.AST(tt.input))
