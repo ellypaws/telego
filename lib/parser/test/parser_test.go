@@ -259,8 +259,8 @@ __underline__
 			got := parserv2.Parse(session, tt.input)
 			if got != tt.expected {
 				t.Errorf("DiscordToTelegramMarkdown(%q) = %q; want %q", tt.input, got, tt.expected)
-				saveAsJSONFile(t, fmt.Sprintf("./bot/parser/test/debug_%s.json", tt.name), parserv2.AST(tt.input))
-				saveResult(t, fmt.Sprintf("./bot/parser/test/debug_%s.txt", tt.name), got, tt.expected)
+				saveAsJSONFile(t, fmt.Sprintf("./lib/parser/test/debug_%s.json", tt.name), parserv2.AST(tt.input))
+				saveResult(t, fmt.Sprintf("./lib/parser/test/debug_%s.txt", tt.name), got, tt.expected)
 			}
 		})
 	}
@@ -542,8 +542,8 @@ __underline__
 			got := parserv5.Parse(session, nil, tt.input)
 			if got != tt.expected {
 				t.Errorf("DiscordToTelegramMarkdown(%q) = %q; want %q", tt.input, got, tt.expected)
-				saveAsJSONFile(t, fmt.Sprintf("./bot/parser/test/debug_%s.json", tt.name), parserv5.AST(tt.input))
-				saveResult(t, fmt.Sprintf("./bot/parser/test/debug_%s.txt", tt.name), got, tt.expected)
+				saveAsJSONFile(t, fmt.Sprintf("./lib/parser/test/debug_%s.json", tt.name), parserv5.AST(tt.input))
+				saveResult(t, fmt.Sprintf("./lib/parser/test/debug_%s.txt", tt.name), got, tt.expected)
 			}
 		})
 	}
