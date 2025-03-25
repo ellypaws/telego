@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/charmbracelet/log"
+
 	"telegram-discord/lib"
 
 	"github.com/bwmarrin/discordgo"
@@ -42,7 +44,7 @@ func RetryMiddleware[T any](b *Bot, retries int, ignore ...error) Middleware[T] 
 				}
 				for _, skip := range ignore {
 					if errors.Is(err, skip) {
-						b.Discord.Logger().Warn(
+						logger.Warn(
 							"Error returned but is marked as ignore, will not retry",
 							"error", err,
 							"skip", skip,
@@ -52,7 +54,7 @@ func RetryMiddleware[T any](b *Bot, retries int, ignore ...error) Middleware[T] 
 					}
 				}
 				if i < retries-1 {
-					b.Discord.Logger().Warn(
+					logger.Warn(
 						"Failed to handle event, retrying...",
 						"error", err,
 						"attempt", i+1,
@@ -60,7 +62,7 @@ func RetryMiddleware[T any](b *Bot, retries int, ignore ...error) Middleware[T] 
 					)
 				}
 			}
-			b.Discord.Logger().Error(
+			logger.Error(
 				fmt.Sprintf("Failed to handle event after %d retries", retries),
 				"error", err,
 				"type", fmt.Sprintf("%T", event),
@@ -70,12 +72,12 @@ func RetryMiddleware[T any](b *Bot, retries int, ignore ...error) Middleware[T] 
 	}
 }
 
-func SkipperMiddleware[T any](b *Bot, skippers ...func(*discordgo.Session, T) error) Middleware[T] {
+func SkipperMiddleware[T any](logger *log.Logger, skippers ...func(*discordgo.Session, T) error) Middleware[T] {
 	return func(next HandlerFunc[T]) HandlerFunc[T] {
 		return func(s *discordgo.Session, event T) error {
 			for _, skipper := range skippers {
 				if err := skipper(s, event); err != nil {
-					b.Discord.Logger().Debug(
+					logger.Debug(
 						"Skipping event",
 						"type", fmt.Sprintf("%T", event),
 						"reason", err,
