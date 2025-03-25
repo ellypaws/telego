@@ -89,7 +89,7 @@ func SkipperMiddleware[T any](b *Bot, skippers ...func(*discordgo.Session, T) er
 }
 
 func SkipPrefixes(prefixes ...string) func(*discordgo.Session, *discordgo.MessageCreate) error {
-	return func(s *discordgo.Session, m *discordgo.MessageCreate) error {
+	return func(_ *discordgo.Session, m *discordgo.MessageCreate) error {
 		for _, prefix := range prefixes {
 			if strings.HasPrefix(m.Message.Content, prefix) {
 				return fmt.Errorf("message starts with prefix %q", prefix)
@@ -103,7 +103,7 @@ var (
 	ErrUserNotBot = errors.New("user is not a bot")
 )
 
-func OnlyBots(s *discordgo.Session, m *discordgo.MessageCreate) error {
+func OnlyBots(_ *discordgo.Session, m *discordgo.MessageCreate) error {
 	user := lib.GetUser(m)
 	if user == nil {
 		return nil
