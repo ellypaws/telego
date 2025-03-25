@@ -5,11 +5,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/charmbracelet/log"
-
 	"telegram-discord/lib"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/charmbracelet/log"
 )
 
 // HandlerFunc is a generic event handler that processes events of type T.
