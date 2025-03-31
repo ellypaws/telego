@@ -543,6 +543,11 @@ __underline__
 			expected: `:\>  
 :`,
 		},
+		{
+			name:     "Timestamp",
+			input:    `<t:1743516000:t>`,
+			expected: "*2:00 PM UTC* \\(10:00 AM EDT\\)",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

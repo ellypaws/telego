@@ -133,7 +133,16 @@ type TimestampNode struct {
 }
 
 func (n *TimestampNode) String() string {
-	t := time.Unix(n.Timestamp, 0).UTC()
+	utc := time.Unix(n.Timestamp, 0).UTC()
+	est, err := time.LoadLocation("America/New_York")
+	if err != nil {
+		return n.format(utc)
+	}
+
+	return fmt.Sprintf(`*%s* \(%s\)`, n.format(utc), n.format(utc.In(est)))
+}
+
+func (n *TimestampNode) format(t time.Time) string {
 	var formatted string
 	switch n.Style {
 	case "t":
@@ -157,7 +166,7 @@ func (n *TimestampNode) String() string {
 }
 
 func formatRelativeFull(t time.Time) string {
-	return fmt.Sprintf("*%s* \\(%s\\)", formatRelativeTime(t), escapeTelegram(t.Format("January 02, 2006 3:04 PM MST")))
+	return fmt.Sprintf(`*%s* \(%s\)`, formatRelativeTime(t), escapeTelegram(t.Format("January 02, 2006 3:04 PM MST")))
 }
 
 func formatRelativeTime(t time.Time) string {
