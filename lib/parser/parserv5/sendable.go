@@ -20,7 +20,7 @@ func Sendable(s *discordgo.Session, m *discordgo.Message, p parser) (any, error)
 	if len(m.Attachments) > 0 {
 		for _, attachment := range m.Attachments {
 			if isImage(attachment.ContentType) {
-				reader, err := lib.RetrieveFile(attachment.URL)
+				reader, err := lib.DefaultCache.RetrieveFile(attachment.URL)
 				if err != nil {
 					return nil, err
 				}
@@ -30,7 +30,7 @@ func Sendable(s *discordgo.Session, m *discordgo.Message, p parser) (any, error)
 				}, nil
 			}
 
-			reader, err := lib.RetrieveFile(attachment.URL)
+			reader, err := lib.DefaultCache.RetrieveFile(attachment.URL)
 			if err != nil {
 				return nil, err
 			}
@@ -44,7 +44,7 @@ func Sendable(s *discordgo.Session, m *discordgo.Message, p parser) (any, error)
 	if len(m.Embeds) > 0 {
 		for _, embed := range m.Embeds {
 			if embed.Image != nil {
-				reader, err := lib.RetrieveFile(embed.Image.URL)
+				reader, err := lib.DefaultCache.RetrieveFile(embed.Image.URL)
 				if err != nil {
 					return nil, err
 				}
@@ -54,7 +54,7 @@ func Sendable(s *discordgo.Session, m *discordgo.Message, p parser) (any, error)
 				}, nil
 			}
 			if embed.Thumbnail != nil {
-				reader, err := lib.RetrieveFile(embed.Thumbnail.URL)
+				reader, err := lib.DefaultCache.RetrieveFile(embed.Thumbnail.URL)
 				if err != nil {
 					return nil, err
 				}
