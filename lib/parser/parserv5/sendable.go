@@ -17,25 +17,6 @@ func Sendable(s *discordgo.Session, m *discordgo.Message, p parser) (any, error)
 		p = Parser(s, m)
 	}
 
-	for _, attachment := range m.Attachments {
-		reader, err := lib.DefaultCache.RetrieveFile(attachment.URL)
-		if err != nil {
-			return nil, err
-		}
-
-		if isImage(attachment.ContentType) {
-			return &telebot.Photo{
-				File:    telebot.FromReader(reader),
-				Caption: p(m.Content),
-			}, nil
-		}
-
-		return &telebot.Document{
-			File:    telebot.FromReader(reader),
-			Caption: p(m.Content),
-		}, nil
-	}
-
 	if len(m.Embeds) > 0 {
 		for _, embed := range m.Embeds {
 			if embed.Image != nil {
@@ -61,6 +42,25 @@ func Sendable(s *discordgo.Session, m *discordgo.Message, p parser) (any, error)
 		}
 
 		return formatEmbedsToMarkdownV2(m.Embeds, p), nil
+	}
+
+	for _, attachment := range m.Attachments {
+		reader, err := lib.DefaultCache.RetrieveFile(attachment.URL)
+		if err != nil {
+			return nil, err
+		}
+
+		if isImage(attachment.ContentType) {
+			return &telebot.Photo{
+				File:    telebot.FromReader(reader),
+				Caption: p(m.Content),
+			}, nil
+		}
+
+		return &telebot.Document{
+			File:    telebot.FromReader(reader),
+			Caption: p(m.Content),
+		}, nil
 	}
 
 	return p(m.Content), nil
