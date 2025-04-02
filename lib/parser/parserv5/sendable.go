@@ -17,28 +17,23 @@ func Sendable(s *discordgo.Session, m *discordgo.Message, p parser) (any, error)
 		p = Parser(s, m)
 	}
 
-	if len(m.Attachments) > 0 {
-		for _, attachment := range m.Attachments {
-			if isImage(attachment.ContentType) {
-				reader, err := lib.DefaultCache.RetrieveFile(attachment.URL)
-				if err != nil {
-					return nil, err
-				}
-				return &telebot.Photo{
-					File:    telebot.FromReader(reader),
-					Caption: p(m.Content),
-				}, nil
-			}
+	for _, attachment := range m.Attachments {
+		reader, err := lib.DefaultCache.RetrieveFile(attachment.URL)
+		if err != nil {
+			return nil, err
+		}
 
-			reader, err := lib.DefaultCache.RetrieveFile(attachment.URL)
-			if err != nil {
-				return nil, err
-			}
-			return &telebot.Document{
+		if isImage(attachment.ContentType) {
+			return &telebot.Photo{
 				File:    telebot.FromReader(reader),
 				Caption: p(m.Content),
 			}, nil
 		}
+
+		return &telebot.Document{
+			File:    telebot.FromReader(reader),
+			Caption: p(m.Content),
+		}, nil
 	}
 
 	if len(m.Embeds) > 0 {
