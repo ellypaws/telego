@@ -3,6 +3,7 @@ package bot
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	"telegram-discord/lib"
@@ -21,7 +22,7 @@ type Middleware[T any] func(HandlerFunc[T]) HandlerFunc[T]
 // The first middleware in the slice will be the outermost.
 func Chain[T any](handler HandlerFunc[T], middlewares ...Middleware[T]) func(*discordgo.Session, T) {
 	h := handler
-	for i := len(middlewares) - 1; i >= 0; i-- {
+	for i := range slices.Backward(middlewares) {
 		h = middlewares[i](h)
 	}
 	return func(s *discordgo.Session, event T) {
