@@ -65,6 +65,9 @@ type CodeBlockNode struct {
 }
 
 func (n *CodeBlockNode) String() string {
+	if strings.TrimSpace(n.Text) == "" {
+		return ""
+	}
 	text := strings.ReplaceAll(n.Text, "\\", "\\\\")
 	text = strings.ReplaceAll(text, "`", "\\`")
 	return "```" + text + "```"
