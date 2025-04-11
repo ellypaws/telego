@@ -131,24 +131,55 @@ func WhitelistMiddleware(whitelist map[string]bool) Middleware[*discordgo.Messag
 	}
 }
 
-func NotifyOnErrorMiddleware[T any](ids ...string) Middleware[T] {
+// NotifyOnErrorMiddleware runs all the functions in notifiers if the handler returns an error.
+func NotifyOnErrorMiddleware[T any](notifiers ...func(*discordgo.Session, T, error) error) Middleware[T] {
 	return func(next HandlerFunc[T]) HandlerFunc[T] {
 		return func(s *discordgo.Session, event T) error {
 			handlerError := next(s, event)
 			if handlerError == nil {
 				return nil
 			}
-			for _, id := range ids {
-				channel, channelErr := s.UserChannelCreate(id)
-				if channelErr != nil {
-					return channelErr
+			for _, notify := range notifiers {
+				if notify == nil {
+					continue
 				}
-				_, sendErr := s.ChannelMessageSendComplex(channel.ID, &discordgo.MessageSend{
-					Embeds: lib.ErrorEmbed(fmt.Sprintf("%T", event), handlerError),
-				})
-				return sendErr
+				if err := notify(s, event, handlerError); err != nil {
+					return err
+				}
 			}
 			return nil
 		}
+	}
+}
+
+func NotifyUsers[T any](ids ...string) func(*discordgo.Session, T, error) error {
+	return func(s *discordgo.Session, event T, handlerError error) error {
+		for _, id := range ids {
+			channel, channelErr := s.UserChannelCreate(id)
+			if channelErr != nil {
+				return channelErr
+			}
+			_, sendErr := s.ChannelMessageSendComplex(channel.ID, &discordgo.MessageSend{
+				Embeds: lib.ErrorEmbed(fmt.Sprintf("%T", event), handlerError),
+			})
+			return sendErr
+		}
+		return nil
+	}
+}
+
+func NotifyChannels[T any](channels ...string) func(*discordgo.Session, T, error) error {
+	return func(s *discordgo.Session, event T, handlerError error) error {
+		for _, id := range channels {
+			channel, channelErr := s.State.Channel(id)
+			if channelErr != nil {
+				return channelErr
+			}
+			_, sendErr := s.ChannelMessageSendComplex(channel.ID, &discordgo.MessageSend{
+				Embeds: lib.ErrorEmbed(fmt.Sprintf("%T", event), handlerError),
+			})
+			return sendErr
+		}
+		return nil
 	}
 }
