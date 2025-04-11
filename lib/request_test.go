@@ -10,12 +10,12 @@ import (
 const testString = "Hello, world!"
 
 func init() {
-	http.Handle("GET /", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
 		_, err := w.Write([]byte(testString))
 		if err != nil {
 			panic(err)
 		}
-	}))
+	})
 	_ = http.ListenAndServe("localhost:8000", nil)
 }
 
