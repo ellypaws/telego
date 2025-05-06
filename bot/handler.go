@@ -66,12 +66,26 @@ func (b *Bot) mainHandler(s *discordgo.Session, m *discordgo.MessageCreate) erro
 	}
 
 	message := m.Message
+	var toReply *telebot.Message
 	if m.MessageReference != nil {
-		retrieve, err := lib.GetReference(b.Discord.Logger(), s, m)
-		if err != nil {
-			return err
+		switch m.MessageReference.Type {
+		case discordgo.MessageReferenceTypeDefault:
+			reference, ok := b.Discord.Get(m.MessageReference.MessageID)
+			if ok {
+				toReply = reference.Telegram
+			} else {
+				b.Discord.Logger().Warn("Could not find message reference for reply",
+					"message_id", message.ID,
+					"reference_id", m.MessageReference.MessageID,
+				)
+			}
+		case discordgo.MessageReferenceTypeForward:
+			retrieve, err := lib.GetReference(b.Discord.Logger(), s, m)
+			if err != nil {
+				return err
+			}
+			message = retrieve
 		}
-		message = retrieve
 	}
 
 	b.Discord.Logger().Debug(
@@ -108,7 +122,7 @@ func (b *Bot) mainHandler(s *discordgo.Session, m *discordgo.MessageCreate) erro
 		"author", lib.GetUsername(message),
 		"content_length", len(message.Content),
 	)
-	reference, err := b.Telegram.Send(toSend)
+	reference, err := b.Telegram.Send(toSend, toReply)
 	if err != nil {
 		b.Discord.Logger().Error(
 			"Failed to forward message to Telegram",
@@ -132,7 +146,7 @@ func (b *Bot) mainHandler(s *discordgo.Session, m *discordgo.MessageCreate) erro
 }
 
 func (b *Bot) deleteMessageHandler(s *discordgo.Session, m *discordgo.MessageDelete) error {
-	reference, ok := b.Discord.Get(m.Message)
+	reference, ok := b.Discord.Get(m.Message.ID)
 	if !ok {
 		b.Discord.Logger().Debug(
 			"Message was deleted but not tracked",
@@ -159,7 +173,7 @@ func (b *Bot) deleteMessageHandler(s *discordgo.Session, m *discordgo.MessageDel
 		)
 		return err
 	}
-	b.Discord.Unset(m.Message)
+	b.Discord.Unset(m.Message.ID)
 	b.Discord.Logger().Info(
 		"Successfully deleted message from Telegram",
 		"message_id", reference.Discord.ID,
@@ -170,7 +184,7 @@ func (b *Bot) deleteMessageHandler(s *discordgo.Session, m *discordgo.MessageDel
 }
 
 func (b *Bot) messageUpdateHandler(s *discordgo.Session, m *discordgo.MessageUpdate) error {
-	reference, ok := b.Discord.Get(m.Message)
+	reference, ok := b.Discord.Get(m.Message.ID)
 	if !ok {
 		b.Discord.Logger().Debug(
 			"Message was updated but not tracked",

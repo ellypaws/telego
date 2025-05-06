@@ -98,16 +98,16 @@ func (b *Bot) Set(discord *discordgo.Message, telegram *telebot.Message) {
 	b.mutex.Unlock()
 }
 
-func (b *Bot) Get(message *discordgo.Message) (Tracked, bool) {
+func (b *Bot) Get(id string) (Tracked, bool) {
 	b.mutex.Lock()
-	tracked, ok := b.tracked[message.ID]
+	tracked, ok := b.tracked[id]
 	b.mutex.Unlock()
 	return tracked, ok
 }
 
-func (b *Bot) Unset(message *discordgo.Message) {
+func (b *Bot) Unset(id string) {
 	b.mutex.Lock()
-	delete(b.tracked, message.ID)
+	delete(b.tracked, id)
 	b.mutex.Unlock()
 }
 
