@@ -5,6 +5,7 @@ import (
 	"telegram-discord/lib/parser/parserv5"
 
 	"github.com/bwmarrin/discordgo"
+	"gopkg.in/telebot.v4"
 )
 
 func (b *Bot) registerMainHandler() {
