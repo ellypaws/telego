@@ -142,6 +142,9 @@ func (b *Bot) save() error {
 	b.Clean()
 	b.mutex.Lock()
 	defer b.mutex.Unlock()
+	for _, v := range b.tracked {
+		v.Telegram.Poll = nil // do not store polls because telebot.Message.Poll.Type does not marshal properly
+	}
 	if err := enc.Encode(b.tracked); err != nil {
 		return fmt.Errorf("error encoding tracked messages: %w", err)
 	}
