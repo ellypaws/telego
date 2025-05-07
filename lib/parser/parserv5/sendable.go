@@ -1,6 +1,7 @@
 package parserv5
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 	"time"
@@ -55,22 +56,22 @@ func Sendable(s *discordgo.Session, m *discordgo.Message, p parser) (any, error)
 	if len(m.Embeds) > 0 {
 		for _, embed := range m.Embeds {
 			if embed.Image != nil {
-				reader, err := lib.DefaultCache.RetrieveFile(embed.Image.URL)
+				reader, err := lib.DefaultCache.Get(embed.Image.URL)
 				if err != nil {
 					return nil, err
 				}
 				return &telebot.Photo{
-					File:    telebot.FromReader(reader),
+					File:    telebot.FromReader(bytes.NewReader(reader)),
 					Caption: formatEmbedToMarkdownV2(embed, p),
 				}, nil
 			}
 			if embed.Thumbnail != nil {
-				reader, err := lib.DefaultCache.RetrieveFile(embed.Thumbnail.URL)
+				reader, err := lib.DefaultCache.Get(embed.Thumbnail.URL)
 				if err != nil {
 					return nil, err
 				}
 				return &telebot.Photo{
-					File:    telebot.FromReader(reader),
+					File:    telebot.FromReader(bytes.NewReader(reader)),
 					Caption: formatEmbedToMarkdownV2(embed, p),
 				}, nil
 			}
@@ -80,20 +81,20 @@ func Sendable(s *discordgo.Session, m *discordgo.Message, p parser) (any, error)
 	}
 
 	for _, attachment := range m.Attachments {
-		reader, err := lib.DefaultCache.RetrieveFile(attachment.URL)
+		reader, err := lib.DefaultCache.Get(attachment.URL)
 		if err != nil {
 			return nil, err
 		}
 
 		if isImage(attachment.ContentType) {
 			return &telebot.Photo{
-				File:    telebot.FromReader(reader),
+				File:    telebot.FromReader(bytes.NewReader(reader)),
 				Caption: p(m.Content),
 			}, nil
 		}
 
 		return &telebot.Document{
-			File:    telebot.FromReader(reader),
+			File:    telebot.FromReader(bytes.NewReader(reader)),
 			Caption: p(m.Content),
 		}, nil
 	}
