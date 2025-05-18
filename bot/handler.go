@@ -12,7 +12,7 @@ func (b *Bot) registerMainHandler() {
 	b.Discord.Session.AddHandler(Chain(
 		b.mainHandler,
 		SkipperMiddleware(b.Discord.Logger(), OnlyBots),
-		RetryMiddleware[*discordgo.MessageCreate](b.Discord.Logger(), 3),
+		RetryMiddleware[*discordgo.MessageCreate](b.Discord.Logger(), 3, telebot.ErrEmptyText, telebot.ErrEmptyMessage),
 		// WhitelistMiddleware(whitelist),
 	))
 
@@ -23,7 +23,7 @@ func (b *Bot) registerMainHandler() {
 
 	b.Discord.Session.AddHandler(Chain(
 		b.messageUpdateHandler,
-		RetryMiddleware[*discordgo.MessageUpdate](b.Discord.Logger(), 3),
+		RetryMiddleware[*discordgo.MessageUpdate](b.Discord.Logger(), 3, telebot.ErrMessageNotModified, telebot.ErrSameMessageContent),
 	))
 }
 
