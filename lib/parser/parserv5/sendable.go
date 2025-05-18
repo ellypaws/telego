@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"strings"
-	"time"
 
 	"telegram-discord/lib"
 
@@ -20,37 +19,7 @@ func Sendable(s *discordgo.Session, m *discordgo.Message, p parser) (any, error)
 	}
 
 	if m.Poll != nil {
-		// Create poll options from Discord poll choices
-		options := make([]telebot.PollOption, 0, len(m.Poll.Answers))
-		for _, option := range m.Poll.Answers {
-			if option.Media == nil {
-				continue
-			}
-			options = append(options, telebot.PollOption{
-				Text:      p(option.Media.Text),
-				ParseMode: telebot.ModeMarkdownV2,
-			})
-		}
-
-		var openPeriod int
-		if m.Poll.Expiry != nil {
-			secs := int(m.Poll.Expiry.Unix() - time.Now().Unix())
-			if secs >= 5 && secs <= 600 {
-				openPeriod = secs
-			}
-		}
-
-		return &telebot.Poll{
-			Type:              telebot.PollRegular,
-			Question:          p(m.Poll.Question.Text),
-			Options:           options,
-			Closed:            m.Poll.Expiry != nil && m.Poll.Expiry.Before(time.Now()),
-			MultipleAnswers:   m.Poll.AllowMultiselect,
-			ParseMode:         telebot.ModeMarkdownV2,
-			QuestionParseMode: telebot.ModeMarkdownV2,
-			Anonymous:         true,
-			OpenPeriod:        openPeriod,
-		}, nil
+		return p(m.Poll.Question.Text), nil
 	}
 
 	if len(m.Embeds) > 0 {

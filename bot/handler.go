@@ -1,6 +1,8 @@
 package bot
 
 import (
+	"fmt"
+
 	"telegram-discord/lib"
 	"telegram-discord/lib/parser/parserv5"
 
@@ -123,7 +125,23 @@ func (b *Bot) mainHandler(s *discordgo.Session, m *discordgo.MessageCreate) erro
 		"author", lib.GetUsername(message),
 		"content_length", len(message.Content),
 	)
-	reference, err := b.Telegram.Send(toSend, toReply)
+
+	options := &telebot.SendOptions{
+		ReplyTo:   toReply,
+		ParseMode: telebot.ModeMarkdownV2,
+		ThreadID:  b.Telegram.ThreadID,
+	}
+	if m.Poll != nil {
+		options.ReplyMarkup = &telebot.ReplyMarkup{
+			InlineKeyboard: [][]telebot.InlineButton{
+				{{
+					Text: "VOTE HERE (Discord)",
+					URL:  fmt.Sprintf("https://discord.com/channels/%s/%s/%s", m.GuildID, m.ChannelID, m.ID),
+				}},
+			},
+		}
+	}
+	reference, err := b.Telegram.Send(toSend, options)
 	if err != nil {
 		b.Discord.Logger().Error(
 			"Failed to forward message to Telegram",

@@ -23,7 +23,7 @@ func (b *Bot) Handlers() {
 	b.Bot.Handle(cmdUnsubscribe, b.handleUnsubscribe)
 }
 
-func (b *Bot) Send(content any, reply *telebot.Message) (*telebot.Message, error) {
+func (b *Bot) Send(content any, options *telebot.SendOptions) (*telebot.Message, error) {
 	if b.Channel == 0 {
 		b.logger.Warn("Cannot send message - channel not set")
 		return nil, fmt.Errorf("channel not set")
@@ -36,11 +36,7 @@ func (b *Bot) Send(content any, reply *telebot.Message) (*telebot.Message, error
 		"content_type", fmt.Sprintf("%T", content),
 	)
 	chat := &telebot.Chat{ID: b.Channel}
-	reference, err := b.Bot.Send(chat, content, &telebot.SendOptions{
-		ReplyTo:   reply,
-		ParseMode: telebot.ModeMarkdownV2,
-		ThreadID:  b.ThreadID,
-	})
+	reference, err := b.Bot.Send(chat, content, options)
 	if err != nil {
 		b.logger.Error(
 			"Failed to send message",
