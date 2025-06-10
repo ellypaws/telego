@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"time"
 
-	"telegram-discord/lib"
-
 	"gopkg.in/telebot.v4"
+
+	"telegram-discord/lib"
+	"telegram-discord/lib/wrapper"
 )
 
 const (
@@ -45,7 +46,10 @@ func (b *Bot) Send(content any, options *telebot.SendOptions) (*telebot.Message,
 			"thread_id", b.ThreadID,
 			"content_type", fmt.Sprintf("%T", content),
 		)
-		return nil, fmt.Errorf("error sending to telegram: %w", err)
+		return nil, lib.ParsedError{
+			Message: fmt.Errorf("error sending to telegram: %w", err),
+			Parsed:  wrapper.GetParsed(content),
+		}
 	}
 
 	b.logger.Info(
@@ -82,7 +86,10 @@ func (b *Bot) Edit(reference *telebot.Message, content any) (*telebot.Message, e
 			"chat_id", reference.Chat.ID,
 			"thread_id", reference.ThreadID,
 		)
-		return nil, fmt.Errorf("error editing message: %w", err)
+		return nil, lib.ParsedError{
+			Message: fmt.Errorf("error editing message: %w", err),
+			Parsed:  wrapper.GetParsed(content),
+		}
 	}
 
 	b.logger.Info(

@@ -166,7 +166,7 @@ func ErrorEmbed(handler string, errorContent ...any) []*discordgo.MessageEmbed {
 			Fields: []*discordgo.MessageEmbedField{
 				{
 					Name:   "Error",
-					Value:  formatError(errorContent),
+					Value:  formatError(errorContent...),
 					Inline: false,
 				},
 				{
@@ -188,6 +188,8 @@ func formatError(errorContent ...any) string {
 	var errors []string
 	for _, content := range errorContent {
 		switch content := content.(type) {
+		case ParsedError:
+			errors = append(errors, fmt.Errorf("%w\n```\n%s\n```", content.Message, content.Parsed).Error())
 		case string:
 			errors = append(errors, content)
 		case []string:
