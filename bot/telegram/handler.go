@@ -1,6 +1,7 @@
 package telegram
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -79,13 +80,15 @@ func (b *Bot) Edit(reference *telebot.Message, content any) (*telebot.Message, e
 		ThreadID:  reference.ThreadID,
 	})
 	if err != nil {
-		b.logger.Error(
-			"Failed to edit message in Telegram",
-			"error", err,
-			"message_id", reference.ID,
-			"chat_id", reference.Chat.ID,
-			"thread_id", reference.ThreadID,
-		)
+		if !errors.Is(err, telebot.ErrSameMessageContent) && !errors.Is(err, telebot.ErrMessageNotModified) {
+			b.logger.Error(
+				"Failed to edit message in Telegram",
+				"error", err,
+				"message_id", reference.ID,
+				"chat_id", reference.Chat.ID,
+				"thread_id", reference.ThreadID,
+			)
+		}
 		return nil, lib.ParsedError{
 			Message: fmt.Errorf("error editing message: %w", err),
 			Parsed:  wrapper.GetParsed(content),

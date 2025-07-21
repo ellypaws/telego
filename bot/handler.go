@@ -249,12 +249,6 @@ func (b *Bot) messageUpdateHandler(s *discordgo.Session, m *discordgo.MessageUpd
 	edited, err := b.Telegram.Edit(reference.Telegram, toSend)
 	if err != nil {
 		if errors.Is(err, telebot.ErrSameMessageContent) || errors.Is(err, telebot.ErrMessageNotModified) {
-			b.Telegram.Logger().Warn(
-				"Skipping message - message not modified",
-				"message_id", m.Message.ID,
-				"channel", lib.ChannelNameID(s, m.Message.ChannelID),
-				"author", lib.GetUsername(m),
-			)
 			return nil
 		}
 		b.Discord.Logger().Error(
