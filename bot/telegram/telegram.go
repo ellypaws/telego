@@ -31,7 +31,7 @@ func New(token string, channel int64, threadID int, output io.Writer) (*Bot, err
 
 	logger := log.NewWithOptions(output,
 		log.Options{
-			Level:           log.DebugLevel,
+			Level:           log.InfoLevel,
 			ReportTimestamp: true,
 			Prefix:          "[Telegram]",
 		},
