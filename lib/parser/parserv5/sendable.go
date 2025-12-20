@@ -25,7 +25,7 @@ func Sendable(s *discordgo.Session, m *discordgo.Message, p parser) (any, error)
 
 	if user := lib.GetUser(m); user != nil && !user.Bot {
 		displayName := user.DisplayName()
-		mentioned, err := regexp.Compile(fmt.Sprintf(`^\*%s\*: `, displayName))
+		mentioned, err := regexp.Compile(fmt.Sprintf(`^\*%s\*: `, regexp.QuoteMeta(displayName)))
 		if err == nil && !mentioned.MatchString(m.Content) && displayName != "" {
 			m.Content = fmt.Sprintf("*%s*: %s", displayName, m.Content)
 		}
