@@ -3,6 +3,7 @@ package parserv5
 import (
 	"bytes"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"telegram-discord/lib"
@@ -20,6 +21,14 @@ func Sendable(s *discordgo.Session, m *discordgo.Message, p parser) (any, error)
 
 	if m.Poll != nil {
 		return p(m.Poll.Question.Text), nil
+	}
+
+	if user := lib.GetUser(m); user != nil && !user.Bot {
+		displayName := user.DisplayName()
+		mentioned, err := regexp.Compile(fmt.Sprintf(`^\*%s\*: `, displayName))
+		if err == nil && !mentioned.MatchString(m.Content) && displayName != "" {
+			m.Content = fmt.Sprintf("*%s*: %s", displayName, m.Content)
+		}
 	}
 
 	if len(m.Embeds) > 0 {
