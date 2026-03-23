@@ -68,7 +68,7 @@ var (
 	userRe    = regexp.MustCompile(`<@!?(?P<id>\d+)>`)
 	roleRe    = regexp.MustCompile(`<@&(?P<id>\d+)>`)
 	channelRe = regexp.MustCompile(`<#(?P<id>\d+)>`)
-	emojiRe   = regexp.MustCompile(`<:(?P<name>\w+):(?P<id>\d+)>`)
+	emojiRe   = regexp.MustCompile(`<a?:(?P<name>\w+):(?P<id>\d+)>`)
 )
 
 func replaceMentionsToString(s *discordgo.Session, m *discordgo.Message, text string) string {
