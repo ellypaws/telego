@@ -162,6 +162,10 @@ func (n *TimestampNode) format(t time.Time) string {
 		formatted = t.Format("Monday, January 02, 2006 3:04 PM MST")
 	case "R":
 		return formatRelativeFull(t)
+	case "s":
+		formatted = t.Format("02/01/2006 03:04 PM MST")
+	case "S":
+		formatted = t.Format("January 02, 2006 03:04:05 PM MST")
 	default:
 		formatted = t.Format(time.RFC3339)
 	}
