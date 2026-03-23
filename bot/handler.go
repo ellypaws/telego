@@ -88,6 +88,9 @@ func (b *Bot) mainHandler(s *discordgo.Session, m *discordgo.MessageCreate) erro
 			if err != nil {
 				return err
 			}
+			if retrieve.GuildID == "" {
+				retrieve.GuildID = m.GuildID
+			}
 			message = retrieve
 		}
 	}
