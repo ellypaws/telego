@@ -52,7 +52,7 @@ func preprocess(s *discordgo.Session, m *discordgo.Message, text string) string 
 }
 
 // Replace Discord timestamp tags with markers of the form [[TIMESTAMP:unix:style]].
-var tsRe = regexp.MustCompile(`<t:(\d+):([tTdDfFR])>`)
+var tsRe = regexp.MustCompile(`<t:(\d+):([tTdDfFRsS])>`)
 
 func parseTimestampsToString(text string) string {
 	return tsRe.ReplaceAllStringFunc(text, func(match string) string {
