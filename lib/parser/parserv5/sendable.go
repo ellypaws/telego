@@ -14,6 +14,8 @@ import (
 
 type parser = func(text string) string
 
+var blockQuoteStart = regexp.MustCompile("^[>#`]")
+
 func Sendable(s *discordgo.Session, m *discordgo.Message, p parser) (any, error) {
 	if p == nil {
 		p = Parser(s, m)
@@ -27,7 +29,11 @@ func Sendable(s *discordgo.Session, m *discordgo.Message, p parser) (any, error)
 		displayName := user.DisplayName()
 		mentioned, err := regexp.Compile(fmt.Sprintf(`^\*%s\*: `, regexp.QuoteMeta(displayName)))
 		if err == nil && !mentioned.MatchString(m.Content) && displayName != "" {
-			m.Content = fmt.Sprintf("*%s*: %s", displayName, m.Content)
+			if blockQuoteStart.MatchString(m.Content) {
+				m.Content = fmt.Sprintf("*%s*: \n%s", displayName, m.Content)
+			} else {
+				m.Content = fmt.Sprintf("*%s*: %s", displayName, m.Content)
+			}
 		}
 	}
 
