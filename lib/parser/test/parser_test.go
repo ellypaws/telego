@@ -546,7 +546,37 @@ __underline__
 		{
 			name:     "Timestamp",
 			input:    `<t:1743516000:t>`,
-			expected: "*2:00 PM UTC* \\(10:00 AM EDT\\)",
+			expected: "![2:00 PM UTC](tg://time?unix=1743516000&format=t)",
+		},
+		{
+			name:     "Timestamp long time",
+			input:    `<t:1743516000:T>`,
+			expected: "![2:00:00 PM UTC](tg://time?unix=1743516000&format=T)",
+		},
+		{
+			name:     "Timestamp date",
+			input:    `<t:1743516000:d>`,
+			expected: "![01/04/2025](tg://time?unix=1743516000&format=d)",
+		},
+		{
+			name:     "Timestamp long date",
+			input:    `<t:1743516000:D>`,
+			expected: "![April 01, 2025](tg://time?unix=1743516000&format=D)",
+		},
+		{
+			name:     "Timestamp full date",
+			input:    `<t:1743516000:F>`,
+			expected: "![01/04/2025 14:00 UTC](tg://time?unix=1743516000&format=wDt)",
+		},
+		{
+			name:     "Timestamp Telegram format",
+			input:    `<t:1743516000:wDT>`,
+			expected: "![2025\\-04\\-01T14:00:00Z](tg://time?unix=1743516000&format=wDT)",
+		},
+		{
+			name:     "Timestamp without format",
+			input:    `<t:1743516000>`,
+			expected: "![2025\\-04\\-01T14:00:00Z](tg://time?unix=1743516000)",
 		},
 	}
 	for _, tt := range tests {

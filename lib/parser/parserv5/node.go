@@ -2,11 +2,14 @@ package parserv5
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
 )
+
+const maxTelegramDateEntityLabelRunes = 31
 
 // Node represents an AST node.
 type Node interface {
@@ -136,6 +139,26 @@ type TimestampNode struct {
 }
 
 func (n *TimestampNode) String() string {
+	url := fmt.Sprintf("tg://time?unix=%d", n.Timestamp)
+	if format := n.telegramFormat(); format != "" {
+		url = fmt.Sprintf("%s&format=%s", url, format)
+	}
+
+	return fmt.Sprintf("![%s](%s)", n.timestampLabel(), url)
+}
+
+func (n *TimestampNode) timestampLabel() string {
+	t := time.Unix(n.Timestamp, 0).UTC()
+	label := n.formatLabel(t)
+	if utf8.RuneCountInString(label) > maxTelegramDateEntityLabelRunes {
+		label = compactTimestampFallback(t)
+	}
+	return escapeTelegram(label)
+}
+
+// Deprecated: legacyFallback renders a long timestamp label that can exceed
+// Telegram date entity limits.
+func (n *TimestampNode) legacyFallback() string {
 	utc := time.Unix(n.Timestamp, 0).UTC()
 	est, err := time.LoadLocation("America/New_York")
 	if err != nil {
@@ -145,33 +168,66 @@ func (n *TimestampNode) String() string {
 	return fmt.Sprintf(`*%s* \(%s\)`, n.format(utc), n.format(utc.In(est)))
 }
 
-func (n *TimestampNode) format(t time.Time) string {
-	var formatted string
+var isTelegramTimestampFormat = regexp.MustCompile(`r|w?[dD]?[tT]?`)
+
+func (n *TimestampNode) telegramFormat() string {
 	switch n.Style {
-	case "t":
-		formatted = t.Format("3:04 PM MST")
-	case "T":
-		formatted = t.Format("3:04:05 PM MST")
-	case "d":
-		formatted = t.Format("02/01/2006")
-	case "D":
-		formatted = t.Format("January 02, 2006")
+	case "r":
+		return "r"
+	case "t", "T", "d", "D":
+		return n.Style
 	case "f":
-		formatted = t.Format("January 02, 2006 3:04 PM MST")
+		return "Dt"
 	case "F":
-		formatted = t.Format("Monday, January 02, 2006 3:04 PM MST")
+		return "wDt"
 	case "R":
-		return formatRelativeFull(t)
+		return "r"
 	case "s":
-		formatted = t.Format("02/01/2006 03:04 PM MST")
+		return "dt"
 	case "S":
-		formatted = t.Format("January 02, 2006 03:04:05 PM MST")
+		return "DT"
 	default:
-		formatted = t.Format(time.RFC3339)
+		if isTelegramTimestampFormat.MatchString(n.Style) {
+			return n.Style
+		}
+		return ""
 	}
-	return escapeTelegram(formatted)
 }
 
+func (n *TimestampNode) formatLabel(t time.Time) string {
+	switch n.Style {
+	case "t":
+		return t.Format("3:04 PM MST")
+	case "T":
+		return t.Format("3:04:05 PM MST")
+	case "d":
+		return t.Format("02/01/2006")
+	case "D":
+		return t.Format("January 02, 2006")
+	case "f":
+		return t.Format("January 02, 2006 3:04 PM MST")
+	case "F":
+		return t.Format("Monday, January 02, 2006 3:04 PM MST")
+	case "R", "r":
+		return formatRelativeTime(t)
+	case "s":
+		return t.Format("02/01/2006 03:04 PM MST")
+	case "S":
+		return t.Format("January 02, 2006 03:04:05 PM MST")
+	default:
+		return t.Format(time.RFC3339)
+	}
+}
+
+func compactTimestampFallback(t time.Time) string {
+	return t.Format("02/01/2006 15:04 MST")
+}
+
+func (n *TimestampNode) format(t time.Time) string {
+	return escapeTelegram(n.formatLabel(t))
+}
+
+// Deprecated: Too long for tg://time
 func formatRelativeFull(t time.Time) string {
 	return fmt.Sprintf(`*%s* \(%s\)`, formatRelativeTime(t), escapeTelegram(t.Format("January 02, 2006 3:04 PM MST")))
 }
@@ -277,7 +333,7 @@ func buildAST(input string) []Node {
 			end := findClosing(input, i+len("[[TIMESTAMP:"), "]]")
 			if end != -1 {
 				marker := input[i : end+len("]]")]
-				parts := strings.Split(strings.Trim(marker, "[]"), ":")
+				parts := strings.SplitN(strings.Trim(marker, "[]"), ":", 3)
 				if len(parts) == 3 {
 					ts, err := strconv.ParseInt(parts[1], 10, 64)
 					if err == nil {
