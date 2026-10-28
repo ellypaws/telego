@@ -90,7 +90,12 @@ func SkipperMiddleware[T any](logger *log.Logger, skippers ...func(*discordgo.Se
 	}
 }
 
-func SkipPrefixes[T any](prefixes ...string) func(*discordgo.Session, T) error {
+// MessageEvent is a Discord event that carries a message.
+type MessageEvent interface {
+	*discordgo.MessageCreate | *discordgo.MessageUpdate | *discordgo.MessageDelete
+}
+
+func SkipPrefixes[T MessageEvent](prefixes ...string) func(*discordgo.Session, T) error {
 	return func(_ *discordgo.Session, event T) error {
 		message := lib.GetMessage(event)
 		if message == nil {

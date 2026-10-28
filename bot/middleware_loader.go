@@ -90,7 +90,7 @@ func LoadMiddlewares(file string, logger *log.Logger) (Middlewares, error) {
 	return middlewares, nil
 }
 
-func (specs MiddlewareSpecs) Build[T any](logger *log.Logger) ([]Middleware[T], error) {
+func (specs MiddlewareSpecs) Build[T MessageEvent](logger *log.Logger) ([]Middleware[T], error) {
 	middlewares := make([]Middleware[T], 0, len(specs))
 	for i, spec := range specs {
 		middleware, err := spec.Build[T](logger)
@@ -102,7 +102,7 @@ func (specs MiddlewareSpecs) Build[T any](logger *log.Logger) ([]Middleware[T], 
 	return middlewares, nil
 }
 
-func (spec MiddlewareSpec) Build[T any](logger *log.Logger) (Middleware[T], error) {
+func (spec MiddlewareSpec) Build[T MessageEvent](logger *log.Logger) (Middleware[T], error) {
 	switch spec.Type {
 	case "SkipperMiddleware":
 		if len(spec.Skippers) == 0 {
@@ -145,7 +145,7 @@ func (spec MiddlewareSpec) Build[T any](logger *log.Logger) (Middleware[T], erro
 	}
 }
 
-func (spec SkipperSpec) Build[T any]() (func(*discordgo.Session, T) error, error) {
+func (spec SkipperSpec) Build[T MessageEvent]() (func(*discordgo.Session, T) error, error) {
 	switch spec.Type {
 	case "SkipPrefixes":
 		if len(spec.Prefixes) == 0 {
