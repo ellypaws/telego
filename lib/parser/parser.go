@@ -3,6 +3,7 @@ package parser
 import (
 	"fmt"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -292,8 +293,8 @@ func parseMarkdown(text string) string {
 		state = normal
 	}
 	// Append any unclosed formatting tokens (closing them in reverse order).
-	for j := len(formatStack) - 1; j >= 0; j-- {
-		sb.WriteString(formatStack[j])
+	for _, f := range slices.Backward(formatStack) {
+		sb.WriteString(f)
 	}
 	return sb.String()
 }

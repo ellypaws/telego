@@ -37,7 +37,7 @@ func RetryMiddleware[T any](logger *log.Logger, retries int, ignore ...error) Mi
 	return func(next HandlerFunc[T]) HandlerFunc[T] {
 		return func(s *discordgo.Session, event T) error {
 			var err error
-			for i := 0; i < retries; i++ {
+			for i := range retries {
 				err = next(s, event)
 				if err == nil {
 					return nil

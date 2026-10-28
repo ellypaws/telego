@@ -1,6 +1,8 @@
 package lib
 
 import (
+	"maps"
+
 	"github.com/charmbracelet/log"
 	"github.com/joho/godotenv"
 )
@@ -34,9 +36,7 @@ func SetAll(envs map[string]string) error {
 		return err
 	}
 
-	for key, value := range envs {
-		exist[key] = value
-	}
+	maps.Copy(exist, envs)
 
 	return godotenv.Write(exist, ".env")
 }
