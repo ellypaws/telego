@@ -51,6 +51,27 @@ func GetUser(entities ...any) *discordgo.User {
 	return nil
 }
 
+// GetMessage returns the message an event carries, or nil when it has none.
+func GetMessage(event any) *discordgo.Message {
+	switch e := event.(type) {
+	case *discordgo.Message:
+		return e
+	case *discordgo.MessageCreate:
+		if e != nil {
+			return e.Message
+		}
+	case *discordgo.MessageUpdate:
+		if e != nil {
+			return e.Message
+		}
+	case *discordgo.MessageDelete:
+		if e != nil {
+			return e.Message
+		}
+	}
+	return nil
+}
+
 func ChannelName(s *discordgo.Session, id string) string {
 	if s == nil {
 		return "unknown"

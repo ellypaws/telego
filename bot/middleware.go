@@ -90,10 +90,14 @@ func SkipperMiddleware[T any](logger *log.Logger, skippers ...func(*discordgo.Se
 	}
 }
 
-func SkipPrefixes(prefixes ...string) func(*discordgo.Session, *discordgo.MessageCreate) error {
-	return func(_ *discordgo.Session, m *discordgo.MessageCreate) error {
+func SkipPrefixes[T any](prefixes ...string) func(*discordgo.Session, T) error {
+	return func(_ *discordgo.Session, event T) error {
+		message := lib.GetMessage(event)
+		if message == nil {
+			return nil
+		}
 		for _, prefix := range prefixes {
-			if strings.HasPrefix(m.Message.Content, prefix) {
+			if strings.HasPrefix(message.Content, prefix) {
 				return fmt.Errorf("message starts with prefix %q", prefix)
 			}
 		}
@@ -105,8 +109,8 @@ var (
 	ErrUserNotBot = errors.New("user is not a bot")
 )
 
-func OnlyBots(_ *discordgo.Session, m *discordgo.MessageCreate) error {
-	user := lib.GetUser(m)
+func OnlyBots[T any](_ *discordgo.Session, event T) error {
+	user := lib.GetUser(event)
 	if user == nil {
 		return nil
 	}
@@ -117,16 +121,16 @@ func OnlyBots(_ *discordgo.Session, m *discordgo.MessageCreate) error {
 	return nil
 }
 
-// WhitelistMiddleware allows only messages from whitelisted user IDs.
-// If a message's author is not in the whitelist, the event is ignored.
-func WhitelistMiddleware(whitelist map[string]bool) Middleware[*discordgo.MessageCreate] {
-	return func(next HandlerFunc[*discordgo.MessageCreate]) HandlerFunc[*discordgo.MessageCreate] {
-		return func(s *discordgo.Session, m *discordgo.MessageCreate) error {
-			if !whitelist[m.Author.ID] {
-				// Optionally log that the user is not allowed.
+// WhitelistMiddleware allows only events from whitelisted user IDs.
+// If an event's user is not in the whitelist, the event is ignored.
+func WhitelistMiddleware[T any](ids ...string) Middleware[T] {
+	return func(next HandlerFunc[T]) HandlerFunc[T] {
+		return func(s *discordgo.Session, event T) error {
+			user := lib.GetUser(event)
+			if user == nil || !slices.Contains(ids, user.ID) {
 				return nil
 			}
-			return next(s, m)
+			return next(s, event)
 		}
 	}
 }
@@ -139,47 +143,50 @@ func NotifyOnErrorMiddleware[T any](notifiers ...func(*discordgo.Session, T, err
 			if handlerError == nil {
 				return nil
 			}
+			var errs []error
 			for _, notify := range notifiers {
 				if notify == nil {
 					continue
 				}
-				if err := notify(s, event, handlerError); err != nil {
-					return err
-				}
+				errs = append(errs, notify(s, event, handlerError))
 			}
-			return nil
+			return errors.Join(errs...)
 		}
 	}
 }
 
 func NotifyUsers[T any](ids ...string) func(*discordgo.Session, T, error) error {
 	return func(s *discordgo.Session, event T, handlerError error) error {
+		var errs []error
 		for _, id := range ids {
 			channel, channelErr := s.UserChannelCreate(id)
 			if channelErr != nil {
-				return channelErr
+				errs = append(errs, channelErr)
+				continue
 			}
 			_, sendErr := s.ChannelMessageSendComplex(channel.ID, &discordgo.MessageSend{
 				Embeds: lib.ErrorEmbed(fmt.Sprintf("%T", event), handlerError),
 			})
-			return sendErr
+			errs = append(errs, sendErr)
 		}
-		return nil
+		return errors.Join(errs...)
 	}
 }
 
 func NotifyChannels[T any](channels ...string) func(*discordgo.Session, T, error) error {
 	return func(s *discordgo.Session, event T, handlerError error) error {
+		var errs []error
 		for _, id := range channels {
 			channel, channelErr := s.State.Channel(id)
 			if channelErr != nil {
-				return channelErr
+				errs = append(errs, channelErr)
+				continue
 			}
 			_, sendErr := s.ChannelMessageSendComplex(channel.ID, &discordgo.MessageSend{
 				Embeds: lib.ErrorEmbed(fmt.Sprintf("%T", event), handlerError),
 			})
-			return sendErr
+			errs = append(errs, sendErr)
 		}
-		return nil
+		return errors.Join(errs...)
 	}
 }

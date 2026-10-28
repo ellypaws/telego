@@ -12,22 +12,9 @@ import (
 )
 
 func (b *Bot) registerMainHandler() {
-	b.Discord.Session.AddHandler(Chain(
-		b.mainHandler,
-		SkipperMiddleware(b.Discord.Logger(), OnlyBots),
-		RetryMiddleware[*discordgo.MessageCreate](b.Discord.Logger(), 3, telebot.ErrEmptyText, telebot.ErrEmptyMessage),
-		// WhitelistMiddleware(whitelist),
-	))
-
-	b.Discord.Session.AddHandler(Chain(
-		b.deleteMessageHandler,
-		RetryMiddleware[*discordgo.MessageDelete](b.Discord.Logger(), 3),
-	))
-
-	b.Discord.Session.AddHandler(Chain(
-		b.messageUpdateHandler,
-		RetryMiddleware[*discordgo.MessageUpdate](b.Discord.Logger(), 3, telebot.ErrMessageNotModified, telebot.ErrSameMessageContent),
-	))
+	b.Discord.Session.AddHandler(Chain(b.mainHandler, b.middlewares.MessageCreate...))
+	b.Discord.Session.AddHandler(Chain(b.deleteMessageHandler, b.middlewares.MessageDelete...))
+	b.Discord.Session.AddHandler(Chain(b.messageUpdateHandler, b.middlewares.MessageUpdate...))
 }
 
 func (b *Bot) mainHandler(s *discordgo.Session, m *discordgo.MessageCreate) error {
