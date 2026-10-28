@@ -22,10 +22,11 @@ type Bot struct {
 	Telegram *telegram.Bot
 	Bots     []Bots
 
-	middlewares  Middlewares
-	watchdog     context.Context
-	stopWatchdog context.CancelFunc
-	unhealthy    chan error
+	middlewares     Middlewares
+	notifyOnRestart NotifySpec
+	watchdog        context.Context
+	stopWatchdog    context.CancelFunc
+	unhealthy       chan error
 }
 
 type Bots interface {
@@ -75,7 +76,7 @@ func New(config Config) (*Bot, error) {
 		return nil, fmt.Errorf("error creating Discord bot: %w", err)
 	}
 
-	middlewares, err := LoadMiddlewares(middlewareFile, discordBot.Logger())
+	middlewares, notifyOnRestart, err := LoadMiddlewares(middlewareFile, discordBot.Logger())
 	if err != nil {
 		return nil, fmt.Errorf("error loading middlewares: %w", err)
 	}
@@ -103,10 +104,11 @@ func New(config Config) (*Bot, error) {
 			discordBot,
 			tgBot,
 		},
-		middlewares:  middlewares,
-		watchdog:     watchdog,
-		stopWatchdog: stopWatchdog,
-		unhealthy:    make(chan error, 1),
+		middlewares:     middlewares,
+		notifyOnRestart: notifyOnRestart,
+		watchdog:        watchdog,
+		stopWatchdog:    stopWatchdog,
+		unhealthy:       make(chan error, 1),
 	}, nil
 }
 
@@ -167,6 +169,7 @@ func (b *Bot) Start() error {
 	b.registerMainHandler()
 	b.Discord.Logger().Info("Message mirroring bot is running")
 	go b.watchDiscord()
+	b.notifyRestart()
 	return nil
 }
 

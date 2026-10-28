@@ -1,11 +1,17 @@
 package bot
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"runtime/pprof"
 	"time"
+
+	"telegram-discord/lib"
+
+	"github.com/bwmarrin/discordgo"
 )
 
 const (
@@ -13,6 +19,10 @@ const (
 	// unhealthyLimit leaves discordgo time to notice a dead gateway and reconnect by itself,
 	// which takes up to five heartbeat intervals plus its reconnect backoff.
 	unhealthyLimit = 5 * time.Minute
+
+	// restartFile records why the watchdog gave up, so the next start can report it.
+	restartFile          = "watchdog-restart.txt"
+	restartNotifyTimeout = 15 * time.Second
 )
 
 // watchDiscord reports on b.unhealthy once every Discord health check has failed for
@@ -55,14 +65,48 @@ func (b *Bot) watchDiscord() {
 			continue
 		}
 
+		reason := fmt.Errorf("discord unhealthy for %s: %w", down, err)
 		if file, err := dumpGoroutines(); err != nil {
 			b.Discord.Logger().Error("Failed to write goroutine dump", "error", err)
 		} else {
 			b.Discord.Logger().Error("Discord is unresponsive, wrote goroutine dump", "file", file)
+			reason = fmt.Errorf("%w, goroutine dump in %s", reason, file)
 		}
-		b.unhealthy <- fmt.Errorf("discord unhealthy for %s: %w", down, err)
+		if err := os.WriteFile(restartFile, []byte(reason.Error()), 0o644); err != nil {
+			b.Discord.Logger().Error("Failed to record watchdog restart", "error", err)
+		}
+		b.unhealthy <- reason
 		return
 	}
+}
+
+// notifyRestart reports a restart the watchdog caused in the previous run, then removes the
+// record so it is reported once.
+func (b *Bot) notifyRestart() {
+	reason, err := os.ReadFile(restartFile)
+	if errors.Is(err, fs.ErrNotExist) {
+		return
+	}
+	if err != nil {
+		b.Discord.Logger().Error("Failed to read watchdog restart record", "error", err)
+		return
+	}
+	if err := os.Remove(restartFile); err != nil {
+		b.Discord.Logger().Warn("Failed to remove watchdog restart record", "error", err)
+	}
+	b.Discord.Logger().Warn("Restarted by the watchdog", "reason", string(reason))
+
+	if len(b.notifyOnRestart.Users) == 0 && len(b.notifyOnRestart.Channels) == 0 {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), restartNotifyTimeout)
+	defer cancel()
+	embeds := lib.ErrorEmbed("Watchdog restart", string(reason))
+	if err := b.notifyOnRestart.Notify(b.Discord.Session, embeds, discordgo.WithContext(ctx)); err != nil {
+		b.Discord.Logger().Error("Failed to send restart notification", "error", err)
+		return
+	}
+	b.Discord.Logger().Info("Sent restart notification")
 }
 
 func dumpGoroutines() (string, error) {

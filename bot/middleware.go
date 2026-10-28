@@ -162,36 +162,40 @@ func NotifyOnErrorMiddleware[T any](notifiers ...func(*discordgo.Session, T, err
 
 func NotifyUsers[T any](ids ...string) func(*discordgo.Session, T, error) error {
 	return func(s *discordgo.Session, event T, handlerError error) error {
-		var errs []error
-		for _, id := range ids {
-			channel, channelErr := s.UserChannelCreate(id)
-			if channelErr != nil {
-				errs = append(errs, channelErr)
-				continue
-			}
-			_, sendErr := s.ChannelMessageSendComplex(channel.ID, &discordgo.MessageSend{
-				Embeds: lib.ErrorEmbed(fmt.Sprintf("%T", event), handlerError),
-			})
-			errs = append(errs, sendErr)
-		}
-		return errors.Join(errs...)
+		return notifyUsers(s, ids, lib.ErrorEmbed(fmt.Sprintf("%T", event), handlerError))
 	}
 }
 
 func NotifyChannels[T any](channels ...string) func(*discordgo.Session, T, error) error {
 	return func(s *discordgo.Session, event T, handlerError error) error {
-		var errs []error
-		for _, id := range channels {
-			channel, channelErr := s.State.Channel(id)
-			if channelErr != nil {
-				errs = append(errs, channelErr)
-				continue
-			}
-			_, sendErr := s.ChannelMessageSendComplex(channel.ID, &discordgo.MessageSend{
-				Embeds: lib.ErrorEmbed(fmt.Sprintf("%T", event), handlerError),
-			})
-			errs = append(errs, sendErr)
-		}
-		return errors.Join(errs...)
+		return notifyChannels(s, channels, lib.ErrorEmbed(fmt.Sprintf("%T", event), handlerError))
 	}
+}
+
+func notifyUsers(s *discordgo.Session, ids []string, embeds []*discordgo.MessageEmbed, options ...discordgo.RequestOption) error {
+	var errs []error
+	for _, id := range ids {
+		channel, channelErr := s.UserChannelCreate(id, options...)
+		if channelErr != nil {
+			errs = append(errs, channelErr)
+			continue
+		}
+		_, sendErr := s.ChannelMessageSendComplex(channel.ID, &discordgo.MessageSend{Embeds: embeds}, options...)
+		errs = append(errs, sendErr)
+	}
+	return errors.Join(errs...)
+}
+
+func notifyChannels(s *discordgo.Session, channels []string, embeds []*discordgo.MessageEmbed, options ...discordgo.RequestOption) error {
+	var errs []error
+	for _, id := range channels {
+		channel, channelErr := s.State.Channel(id)
+		if channelErr != nil {
+			errs = append(errs, channelErr)
+			continue
+		}
+		_, sendErr := s.ChannelMessageSendComplex(channel.ID, &discordgo.MessageSend{Embeds: embeds}, options...)
+		errs = append(errs, sendErr)
+	}
+	return errors.Join(errs...)
 }

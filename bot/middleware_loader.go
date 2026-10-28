@@ -13,8 +13,9 @@ import (
 
 const middlewareFile = "middleware.json"
 
-// MiddlewareConfig lists the middleware chain of each Discord handler, outermost first. It
-// holds deployment-specific values such as notify targets, so it is kept out of the repo:
+// MiddlewareConfig lists the middleware chain of each Discord handler, outermost first, and
+// who to notify after the watchdog restarts the bot. It holds deployment-specific values such
+// as notify targets, so it is kept out of the repo:
 //
 //	{
 //	  "message_create": [
@@ -23,12 +24,14 @@ const middlewareFile = "middleware.json"
 //	    {"type": "RetryMiddleware", "retries": 3, "ignore": ["ErrEmptyText"]}
 //	  ],
 //	  "message_delete": [],
-//	  "message_update": []
+//	  "message_update": [],
+//	  "notify_on_restart": {"users": ["<user id>"]}
 //	}
 type MiddlewareConfig struct {
-	MessageCreate MiddlewareSpecs `json:"message_create"`
-	MessageDelete MiddlewareSpecs `json:"message_delete"`
-	MessageUpdate MiddlewareSpecs `json:"message_update"`
+	MessageCreate   MiddlewareSpecs `json:"message_create"`
+	MessageDelete   MiddlewareSpecs `json:"message_delete"`
+	MessageUpdate   MiddlewareSpecs `json:"message_update"`
+	NotifyOnRestart NotifySpec      `json:"notify_on_restart"`
 }
 
 type MiddlewareSpecs []MiddlewareSpec
@@ -42,6 +45,19 @@ type MiddlewareSpec struct {
 	Channels []string      `json:"channels"` // NotifyOnErrorMiddleware
 	Retries  int           `json:"retries"`  // RetryMiddleware
 	Ignore   []string      `json:"ignore"`   // RetryMiddleware
+}
+
+// NotifySpec lists the users to DM and the channels to post in.
+type NotifySpec struct {
+	Users    []string `json:"users"`
+	Channels []string `json:"channels"`
+}
+
+func (n NotifySpec) Notify(s *discordgo.Session, embeds []*discordgo.MessageEmbed, options ...discordgo.RequestOption) error {
+	return errors.Join(
+		notifyUsers(s, n.Users, embeds, options...),
+		notifyChannels(s, n.Channels, embeds, options...),
+	)
 }
 
 type SkipperSpec struct {
@@ -63,10 +79,10 @@ type Middlewares struct {
 	MessageUpdate []Middleware[*discordgo.MessageUpdate]
 }
 
-func LoadMiddlewares(file string, logger *log.Logger) (Middlewares, error) {
+func LoadMiddlewares(file string, logger *log.Logger) (Middlewares, NotifySpec, error) {
 	f, err := os.Open(file)
 	if err != nil {
-		return Middlewares{}, err
+		return Middlewares{}, NotifySpec{}, err
 	}
 	defer f.Close()
 
@@ -74,20 +90,20 @@ func LoadMiddlewares(file string, logger *log.Logger) (Middlewares, error) {
 	decoder := json.NewDecoder(f)
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(&config); err != nil {
-		return Middlewares{}, fmt.Errorf("error decoding %s: %w", file, err)
+		return Middlewares{}, NotifySpec{}, fmt.Errorf("error decoding %s: %w", file, err)
 	}
 
 	var middlewares Middlewares
 	if middlewares.MessageCreate, err = config.MessageCreate.Build[*discordgo.MessageCreate](logger); err != nil {
-		return Middlewares{}, fmt.Errorf("message_create: %w", err)
+		return Middlewares{}, NotifySpec{}, fmt.Errorf("message_create: %w", err)
 	}
 	if middlewares.MessageDelete, err = config.MessageDelete.Build[*discordgo.MessageDelete](logger); err != nil {
-		return Middlewares{}, fmt.Errorf("message_delete: %w", err)
+		return Middlewares{}, NotifySpec{}, fmt.Errorf("message_delete: %w", err)
 	}
 	if middlewares.MessageUpdate, err = config.MessageUpdate.Build[*discordgo.MessageUpdate](logger); err != nil {
-		return Middlewares{}, fmt.Errorf("message_update: %w", err)
+		return Middlewares{}, NotifySpec{}, fmt.Errorf("message_update: %w", err)
 	}
-	return middlewares, nil
+	return middlewares, config.NotifyOnRestart, nil
 }
 
 func (specs MiddlewareSpecs) Build[T MessageEvent](logger *log.Logger) ([]Middleware[T], error) {
