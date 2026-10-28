@@ -2,6 +2,7 @@ package discord
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -15,6 +16,10 @@ import (
 	"github.com/muesli/termenv"
 	"gopkg.in/telebot.v4"
 )
+
+// maxHeartbeatAge is well past Discord's ~41s heartbeat interval, so an older ACK means the
+// gateway stopped answering.
+const maxHeartbeatAge = 2 * time.Minute
 
 type Bot struct {
 	Session *discordgo.Session
@@ -55,6 +60,7 @@ func New(token string, discordChannelID string, output io.Writer) (*Bot, error) 
 	}
 
 	dg.State.MaxMessageCount = 64
+	dg.Dialer = gatewayDialer()
 	return &Bot{
 		Session: dg,
 		Channel: channel,
@@ -68,6 +74,25 @@ func (b *Bot) Logger() *log.Logger {
 	return b.logger
 }
 
+// Health reports whether the gateway is connected and answering heartbeats. It never blocks:
+// discordgo holds the session lock for all of Session.Open, so a stuck handshake reports as a
+// held lock instead of freezing the caller.
+func (b *Bot) Health() error {
+	if !b.Session.TryRLock() {
+		return errors.New("gateway session lock is held")
+	}
+	ready, lastAck := b.Session.DataReady, b.Session.LastHeartbeatAck
+	b.Session.RUnlock()
+
+	if !ready {
+		return errors.New("gateway is not connected")
+	}
+	if age := time.Since(lastAck); age > maxHeartbeatAge {
+		return fmt.Errorf("no heartbeat ACK for %s", age.Round(time.Second))
+	}
+	return nil
+}
+
 func (b *Bot) Start() error {
 	b.Session.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
 		b.logger.Info(
@@ -78,6 +103,12 @@ func (b *Bot) Start() error {
 			"Discord connection established",
 			"channel", lib.ChannelNameID(b.Session, b.Channel),
 		)
+	})
+	b.Session.AddHandler(func(*discordgo.Session, *discordgo.Disconnect) {
+		b.logger.Warn("Discord gateway disconnected")
+	})
+	b.Session.AddHandler(func(*discordgo.Session, *discordgo.Resumed) {
+		b.logger.Info("Discord gateway session resumed")
 	})
 
 	err := b.Session.Open()

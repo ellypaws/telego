@@ -25,10 +25,22 @@ func NewLogWriters(writers ...io.Writer) ([]io.Writer, func() error, error) {
 	return wrapped, f.Close, nil
 }
 
+// teeWriter writes to every destination even when one fails. io.MultiWriter stops at the
+// first error, which would end the copy out of LogOutput's pipe and leave every later
+// write to os.Stdout or os.Stderr blocked once the pipe buffer fills.
+type teeWriter []io.Writer
+
+func (t teeWriter) Write(p []byte) (int, error) {
+	for _, w := range t {
+		_, _ = w.Write(p)
+	}
+	return len(p), nil
+}
+
 func LogOutput(writer io.Writer) func() {
 	f, _ := os.OpenFile("log.txt", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
 
-	mw := io.MultiWriter(writer, f)
+	mw := teeWriter{writer, f}
 	r, w, _ := os.Pipe()
 
 	os.Stdout = w

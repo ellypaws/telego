@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -17,8 +18,18 @@ func init() {
 }
 
 func main() {
-	defer lib.LogOutput(os.Stdout)()
+	flushLogs := lib.LogOutput(os.Stdout)
+	err := run()
+	if err != nil {
+		log.Printf("exiting: %v", err)
+	}
+	flushLogs()
+	if err != nil {
+		os.Exit(1)
+	}
+}
 
+func run() error {
 	b, err := bot.New(bot.Config{
 		DiscordToken:      os.Getenv(lib.EnvDiscordToken),
 		DiscordChannelID:  os.Getenv(lib.EnvDiscordChannel),
@@ -27,18 +38,18 @@ func main() {
 		TelegramThreadID:  os.Getenv(lib.EnvTelegramThread),
 	})
 	if err != nil {
-		log.Fatalf("error creating bot: %v", err)
+		return fmt.Errorf("error creating bot: %w", err)
 	}
 
 	go func() {
-		err = b.Start()
-		if err != nil {
+		if err := b.Start(); err != nil {
 			log.Fatalf("error starting bot: %v", err)
 		}
 	}()
 
-	b.Wait()
+	waitErr := b.Wait()
 	if err := b.Shutdown(); err != nil {
-		log.Fatalf("error shutting down bot: %v", err)
+		return fmt.Errorf("error shutting down bot: %w", err)
 	}
+	return waitErr
 }

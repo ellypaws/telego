@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -20,6 +21,10 @@ type Bot struct {
 	Discord  *discord.Bot
 	Telegram *telegram.Bot
 	Bots     []Bots
+
+	watchdog     context.Context
+	stopWatchdog context.CancelFunc
+	unhealthy    chan error
 }
 
 type Bots interface {
@@ -84,6 +89,7 @@ func New(config Config) (*Bot, error) {
 		return nil, fmt.Errorf("error creating Telegram bot: %w", err)
 	}
 
+	watchdog, stopWatchdog := context.WithCancel(context.Background())
 	return &Bot{
 		Discord:  discordBot,
 		Telegram: tgBot,
@@ -91,6 +97,9 @@ func New(config Config) (*Bot, error) {
 			discordBot,
 			tgBot,
 		},
+		watchdog:     watchdog,
+		stopWatchdog: stopWatchdog,
+		unhealthy:    make(chan error, 1),
 	}, nil
 }
 
@@ -150,16 +159,25 @@ func (b *Bot) Start() error {
 
 	b.registerMainHandler()
 	b.Discord.Logger().Info("Message mirroring bot is running")
+	go b.watchDiscord()
 	return nil
 }
 
-func (b *Bot) Wait() {
+// Wait blocks until the process is interrupted or the Discord watchdog gives up. The
+// watchdog's error is returned so the caller can exit non-zero and be restarted.
+func (b *Bot) Wait() error {
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
-	<-stop
+	select {
+	case <-stop:
+		return nil
+	case err := <-b.unhealthy:
+		return err
+	}
 }
 
 func (b *Bot) Shutdown() error {
+	b.stopWatchdog()
 	b.Discord.Logger().Info("Shutting down bots")
 	var wg sync.WaitGroup
 	for _, registrar := range b.Bots {
